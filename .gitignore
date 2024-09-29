@@ -1,0 +1,4 @@
+pyenv
+node_modules
+config.py
+*.json

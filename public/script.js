@@ -1,4 +1,5 @@
 document.getElementById("runButton").addEventListener("click", () => {
+  const resultDiv = document.getElementById("result");
   const fromDate = document.getElementById("fromDateInput").value;
   const toDate = document.getElementById("toDateInput").value;
 
@@ -6,6 +7,9 @@ document.getElementById("runButton").addEventListener("click", () => {
     alert("両方の日付を選択してください");
     return;
   }
+
+  resultDiv.textContent = "Fetching data from Github...";
+  resultDiv.style.visibility = "visible"; // 表示
 
   fetch("/run-python", {
     method: "POST",
@@ -19,22 +23,20 @@ document.getElementById("runButton").addEventListener("click", () => {
       if (data.error) {
         throw new Error(data.error);
       }
-      document.getElementById("result").textContent = data.message;
-
       try {
-        displayData();
+        showResult();
+        updateChart();
       } catch (error) {
-        console.error("Error parsing data:", error);
+        console.error("Error:", error);
       }
     })
     .catch((error) => {
       console.error("Error:", error);
-      document.getElementById("result").textContent = "An error occurred";
     });
+
 });
 
-function displayData() {
-  // FIXME: 関数名の変更
+function updateChart() {
   fetch("/api/review-data", {
     method: "GET",
   })
@@ -84,11 +86,12 @@ function displayData() {
 // ページ読み込み時にも初期データを表示
 document.addEventListener("DOMContentLoaded", () => {
   setDefaultDates();
-  displayData();
+  updateChart();
 });
 
 function showResult() {
   const resultDiv = document.getElementById("result");
+  resultDiv.textContent = "Successfully data updated";
   resultDiv.style.visibility = "visible"; // 表示
   setTimeout(() => {
     resultDiv.style.visibility = "hidden"; // 3秒後に非表示
@@ -98,21 +101,21 @@ function showResult() {
 
 // デフォルトの日付を設定する関数
 function setDefaultDates() {
-    const today = new Date();
-    const oneWeekAgo = new Date(today);
-    oneWeekAgo.setDate(today.getDate() - 7);
+  const today = new Date();
+  const oneWeekAgo = new Date(today);
+  oneWeekAgo.setDate(today.getDate() - 7);
 
-    const toDateInput = document.getElementById('toDateInput');
-    const fromDateInput = document.getElementById('fromDateInput');
+  const toDateInput = document.getElementById("toDateInput");
+  const fromDateInput = document.getElementById("fromDateInput");
 
-    toDateInput.value = formatDate(today);
-    fromDateInput.value = formatDate(oneWeekAgo);
+  toDateInput.value = formatDate(today);
+  fromDateInput.value = formatDate(oneWeekAgo);
 }
 
 // 日付をYYYY-MM-DD形式にフォーマットする関数
 function formatDate(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }

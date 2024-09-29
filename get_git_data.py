@@ -270,10 +270,6 @@ def main():
     data = get_github_data(authors, author_count, requested_count, completed_count, from_date, to_date)
     json.dump(data, open("github_data.json", "w"), indent=2)
 
-    # Response
-    # json.dump(data, sys.stdout)
-    # sys.stdout.flush()
-
 
 if __name__ == "__main__":
     main()

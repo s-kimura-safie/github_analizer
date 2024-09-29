@@ -12,12 +12,13 @@
         <h1>GitHub Review Analysis</h1>
         <div class="input-container">
             <a>from</a>
-            <input type="date" id="dateInput">
+            <input type="date" id="fromDateInput">
             <a>to</a>
-            <input type="date" id="dateInput">
-            <button id="runButton">Update</button>
+            <input type="date" id="toDateInput">
+            <button id="runButton" onclick="showResult()">Update</button>
+            <button id="refreshButton" onclick="displayData()">Refresh</button>
         </div>
-        <div id="result"></div>
+        <div id="result"> </div>
         <div class="chart-container">
             <canvas id="reviewChart"></canvas>
         </div>

@@ -19,7 +19,8 @@ app.use(express.json());
 app.post('/run-python', (req, res) => {
     try {
         console.log('Fetching data from Github...');
-        const { stdout, stderr } = execPromise('python3 get_git_data.py');
+        const { fromDate, toDate } = req.body;
+        const { stdout, stderr } = execPromise(`python3 get_git_data.py "${fromDate}" "${toDate}"`);
         console.log('Python script executed successfully');
         
         if (stderr) {
@@ -27,7 +28,8 @@ app.post('/run-python', (req, res) => {
             res.status(500).json({ error: 'Python script error' });
         }
 
-        res.json({ message: 'Successfully data updated'}); 
+        res.json({ message: 'Successfully data updated',
+                   data: stdout }); 
     } catch (error) {
         console.error(`Error: ${error}`);
         res.status(500).json({ error: 'Failed to fetch or parse data' });

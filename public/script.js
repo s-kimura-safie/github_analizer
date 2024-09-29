@@ -1,7 +1,20 @@
 document.getElementById('runButton').addEventListener('click', () => {
-  fetch('/run-python', {
-      method: 'POST',
-  })
+    
+    const fromDate = document.getElementById('fromDateInput').value;
+    const toDate = document.getElementById('toDateInput').value;
+  
+    if (!fromDate || !toDate) {
+        alert('両方の日付を選択してください');
+        return;
+      }
+      
+    fetch('/run-python', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fromDate, toDate }),
+    })
   .then(response => response.json())
   .then(data => {
       if (data.error) {
@@ -21,7 +34,7 @@ document.getElementById('runButton').addEventListener('click', () => {
   });
 });
 
-function displayData() {
+function displayData() { // FIXME: 関数名の変更
   fetch('/api/review-data', {
       method: 'GET',
   })
@@ -71,3 +84,11 @@ function displayData() {
 document.addEventListener('DOMContentLoaded', displayData);
 
 
+
+function showResult() {
+    const resultDiv = document.getElementById('result');
+    resultDiv.style.visibility = 'visible'; // 表示
+    setTimeout(() => {
+        resultDiv.style.visibility = 'hidden'; // 3秒後に非表示
+    }, 5000);
+}

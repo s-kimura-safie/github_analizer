@@ -160,6 +160,7 @@ def update_data(
 
 def get_github_data(authors, author_count, requested_count, completed_count, from_date, to_date):
     authors = [author.replace("-safie", "") for author in authors]
+    authors = [author.replace("-sf", "") for author in authors]
     return {
         "period": [from_date, to_date],
         "labels": authors,
@@ -182,6 +183,16 @@ def get_github_data(authors, author_count, requested_count, completed_count, fro
 
 # Excute main
 def main():
+    if len(sys.argv) > 1:
+        from_date = sys.argv[1]
+        to_date = sys.argv[2]
+    try:
+        datetime.strptime(from_date, "%Y-%m-%d")
+        datetime.strptime(to_date, "%Y-%m-%d")
+    except ValueError:
+        print(json.dumps({"error": "Invalid date format"}))
+        sys.exit(1)
+
     token = cfg.github_token
     authors = cfg.authors
 
@@ -194,13 +205,13 @@ def main():
         search_api_cache = {}
 
     # 本日から1週間前までの日付を取得
-    today = datetime.today()
-    week_ago = today - timedelta(weeks=1)
-    week_ago_str = week_ago.strftime("%Y-%m-%d")
-    today_str = today.strftime("%Y-%m-%d")
+    # today = datetime.today()
+    # week_ago = today - timedelta(weeks=1)
+    # week_ago_str = week_ago.strftime("%Y-%m-%d")
+    # today_str = today.strftime("%Y-%m-%d")
 
     # Search pull requests
-    pulls = search_pr_by_authors(authors, week_ago_str, today_str, token)  # Rate limit: 10 times per minute
+    pulls = search_pr_by_authors(authors, from_date, to_date, token)  # Rate limit: 10 times per minute
     num_pr_tot = pulls["total_count"]
     print(f"# searched pull requests: {num_pr_tot}")
 
@@ -256,12 +267,12 @@ def main():
     for i in range(n):
         print(f"{authors[i]}: {author_count[i]}, {requested_count[i]}, {completed_count[i]}")
 
-    data = get_github_data(authors, author_count, requested_count, completed_count, week_ago_str, today_str)
+    data = get_github_data(authors, author_count, requested_count, completed_count, from_date, to_date)
     json.dump(data, open("github_data.json", "w"), indent=2)
 
     # Response
-    json.dump(data, sys.stdout)
-    sys.stdout.flush()
+    # json.dump(data, sys.stdout)
+    # sys.stdout.flush()
 
 
 if __name__ == "__main__":

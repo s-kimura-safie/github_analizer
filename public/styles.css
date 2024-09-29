@@ -51,16 +51,24 @@ button {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 5px;
   }
   
-#dateInput {
+#fromDateInput,
+#toDateInput {
     margin: 0 10px;
     margin-right: 20px;
     padding: 5px;
     font-size: 12px;
     border: 1px solid #ccc;
     border-radius: 5px;
+}
+
+#result {
+    text-align: center;
+    visibility: hidden; /* 初期状態で非表示 */
+    margin-bottom: 5px;
+    color: indianred;
 }
 
 

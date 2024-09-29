@@ -54,30 +54,3 @@ app.get('/api/review-data', cors(), async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
-
-
-
-
-// const dummyData = {
-//     labels: ['Alice', 'Bob', 'Charlie', 'David', 'Eve'],
-//     datasets: [
-//       {
-//         label: 'Author',
-//         data: [10, 15, 8, 12, 6],
-//         backgroundColor: 'rgba(255, 99, 132, 0.6)',
-//       },
-//       {
-//         label: 'Review Requested',
-//         data: [8, 12, 15, 7, 10],
-//         backgroundColor: 'rgba(54, 162, 235, 0.6)',
-//       },
-//       {
-//         label: 'Review Completed',
-//         data: [5, 10, 12, 9, 8],
-//         backgroundColor: 'rgba(75, 192, 192, 0.6)',
-//       }
-//     ]
-//   };
-
-// res.json(data);
-

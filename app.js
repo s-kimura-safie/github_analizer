@@ -3,42 +3,47 @@ const path = require('path');
 const cors = require('cors');
 const util = require('util');
 const fs = require('fs').promises;
+const { exec } = require('child_process'); // child_processモジュールからexec関数をインポート
 
-const { exec } = require('child_process');
 const app = express();
 const port = 3000;
-const execPromise = util.promisify(exec);
+const execPromise = util.promisify(exec); // exec関数をPromiseベースの関数に変換
 
 
 // 静的ファイルの提供
 app.use(express.static('public'));
 app.use(cors());
+app.use(express.json());
 
 // Pythonスクリプトの実行
-async function excutePython() {
+app.post('/run-python', (req, res) => {
     try {
-            console.log('Fetching data from Github...');
-            const { stdout, stderr } = await execPromise('python3 get_git_data.py');
-            console.log(`Python script output: ${stdout}`);
+        console.log('Fetching data from Github...');
+        const { stdout, stderr } = execPromise('python3 get_git_data.py');
+        console.log('Python script executed successfully');
+        
         if (stderr) {
             console.error(`stderr: ${stderr}`);
-        // return res.status(500).json({ error: 'Python script error' });
+            res.status(500).json({ error: 'Python script error' });
         }
-        // const data = JSON.parse(stdout);
-        // res.json(data);
+
+        res.json({ message: 'Successfully data updated'}); 
     } catch (error) {
         console.error(`Error: ${error}`);
         res.status(500).json({ error: 'Failed to fetch or parse data' });
     }
-}
-
-const data = excutePython();
+});
 
 // APIエンドポイント
 app.get('/api/review-data', cors(), async (req, res) => {
-    const data = await fs.readFile('github_data.json', 'utf8');
-    const result = JSON.parse(data);
-    res.json(result);
+    try {
+        const data = await fs.readFile('github_data.json', 'utf8');
+        const result = JSON.parse(data);
+        res.json(result);
+      } catch (err) {
+        console.error('Error reading file:', err);
+        res.status(500).json({ error: 'Error reading data' });
+      } 
 });
 
 

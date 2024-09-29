@@ -10,7 +10,13 @@
 <body>
     <div class="container">
         <h1>GitHub Review Analysis</h1>
-        <button id="runButton">Update</button>
+        <div class="input-container">
+            <a>from</a>
+            <input type="date" id="dateInput">
+            <a>to</a>
+            <input type="date" id="dateInput">
+            <button id="runButton">Update</button>
+        </div>
         <div id="result"></div>
         <div class="chart-container">
             <canvas id="reviewChart"></canvas>

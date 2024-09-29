@@ -82,7 +82,10 @@ function displayData() {
 }
 
 // ページ読み込み時にも初期データを表示
-document.addEventListener("DOMContentLoaded", displayData);
+document.addEventListener("DOMContentLoaded", () => {
+  setDefaultDates();
+  displayData();
+});
 
 function showResult() {
   const resultDiv = document.getElementById("result");
@@ -90,4 +93,26 @@ function showResult() {
   setTimeout(() => {
     resultDiv.style.visibility = "hidden"; // 3秒後に非表示
   }, 5000);
+}
+
+
+// デフォルトの日付を設定する関数
+function setDefaultDates() {
+    const today = new Date();
+    const oneWeekAgo = new Date(today);
+    oneWeekAgo.setDate(today.getDate() - 7);
+
+    const toDateInput = document.getElementById('toDateInput');
+    const fromDateInput = document.getElementById('fromDateInput');
+
+    toDateInput.value = formatDate(today);
+    fromDateInput.value = formatDate(oneWeekAgo);
+}
+
+// 日付をYYYY-MM-DD形式にフォーマットする関数
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }

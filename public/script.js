@@ -67,12 +67,23 @@ function updateChart() {
           plugins: {
             title: {
               display: true,
-              text: "Review Activity by Person from " + fromDate + " to " + toDate,
+              text:
+                "Review Activity by Person from " + fromDate + " to " + toDate,
             },
             tooltip: {
               mode: "index",
               intersect: false,
             },
+          },
+          onClick: (event, elements) => {
+            if (elements.length > 0) {
+              const index = elements[0].index;
+              const person = data.labels[index];
+              console.log("Clicked on:", person);
+
+              // クリックされた人のPR情報を取得
+              fetchPRInfo(person);
+            }
           },
         },
       });
@@ -82,6 +93,73 @@ function updateChart() {
       document.getElementById("result").textContent =
         "Failed to fetch or display data";
     });
+}
+
+function fetchPRInfo(person) {
+  fetch("/api/review-data", {
+    method: "GET",
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      const prData = data["PR_details"];
+      console.log("PR Data for", person, ":", prData);
+      const filteredPrData = prData.filter((item) =>
+        item.author.includes(person)
+      );
+      console.log("Filtered PR Data for", person, ":", filteredPrData);
+      showPRInfoPopup(person, filteredPrData);
+    })
+    .catch((error) => {
+      console.error("Error fetching PR info:", error);
+    });
+}
+
+function showPRInfoPopup(person, prData) {
+  // オーバーレイの作成
+  const overlay = document.createElement("div");
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.width = "100%";
+  overlay.style.height = "100%";
+  overlay.style.backgroundColor = "rgba(0,0,0,0.5)";
+  overlay.style.zIndex = "999";
+  // モーダルの作成
+  const modal = document.createElement("div");
+  modal.style.position = "fixed";
+  modal.style.left = "50%";
+  modal.style.top = "50%";
+  modal.style.transform = "translate(-50%, -50%)";
+  modal.style.backgroundColor = "white";
+  modal.style.padding = "20px";
+  modal.style.border = "1px solid black";
+  modal.style.zIndex = "1000";
+  modal.style.maxHeight = "80vh";
+  modal.style.overflowY = "auto";
+
+  // モーダルの内容
+  let content = `<h2>${person}'s PRs</h2>`;
+  content += "<ul>";
+  prData.forEach((pr) => {
+    content += `<li><strong>${pr.title}</strong> (${pr.status}) - <a href="${pr.html_url}" target="_blank">Link</a></li>`;
+  });
+  content += "</ul>";
+  content += '<button onclick="this.parentElement.remove()">Close</button>';
+
+  modal.innerHTML = content;
+  // オーバーレイをクリックしたらモーダルを閉じる
+  overlay.onclick = function () {
+    document.body.removeChild(overlay);
+    document.body.removeChild(modal);
+  };
+
+  // モーダル内のクリックはオーバーレイに伝播させない
+  modal.onclick = function (event) {
+    event.stopPropagation();
+  };
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(modal);
 }
 
 // ページ読み込み時にも初期データを表示

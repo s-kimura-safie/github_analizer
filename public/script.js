@@ -144,7 +144,6 @@ function showPRInfoPopup(person, prData) {
     content += `<li><strong>${pr.title}</strong> (${pr.status}) - <a href="${pr.html_url}" target="_blank">Link</a></li>`;
   });
   content += "</ul>";
-  content += '<button onclick="this.parentElement.remove()">Close</button>';
 
   modal.innerHTML = content;
   // オーバーレイをクリックしたらモーダルを閉じる

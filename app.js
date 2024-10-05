@@ -22,6 +22,10 @@ app.post("/run-python", async (req, res) => {
     const { stdout, stderr } = await execPromise(
       `python3 get_git_data.py "${fromDate}" "${toDate}"`
     );
+    // ログメッセージを処理
+    if (stderr) {
+      console.log("Python logs:", stderr);
+    }
     console.log("Python script executed successfully");
     return res.json({ message: "Successfully data updated", data: stdout });
   } catch (error) {

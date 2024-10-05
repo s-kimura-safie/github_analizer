@@ -213,7 +213,7 @@ def main():
     # Search pull requests
     pulls = search_pr_by_authors(authors, from_date, to_date, token)  # Rate limit: 10 times per minute
     num_pr_tot = pulls["total_count"]
-    print(f"# searched pull requests: {num_pr_tot}")
+    print(f"Log: # searched pull requests: {num_pr_tot}", file=sys.stderr)
 
     # Load pulls API cache
     pulls_api_cache_filename = "pulls_api_cache.json"
@@ -238,7 +238,6 @@ def main():
         pr_number = item["number"]
         author = item["user"]["login"]
 
-    pulls_api_cache = {}
     # Calculate author-reviewer matrix
     print(
         f"Call GitHub REST API {2 * num_pr_tot} times. Check GitHub rate limit for more details. Use cache if available."

@@ -33,10 +33,11 @@ document.getElementById("runButton").addEventListener("click", () => {
     .catch((error) => {
       console.error("Error:", error);
     });
-
 });
 
 function updateChart() {
+  const fromDate = document.getElementById("fromDateInput").value;
+  const toDate = document.getElementById("toDateInput").value;
   fetch("/api/review-data", {
     method: "GET",
   })
@@ -66,7 +67,7 @@ function updateChart() {
           plugins: {
             title: {
               display: true,
-              text: "Review Activity by Person",
+              text: "Review Activity by Person from " + fromDate + " to " + toDate,
             },
             tooltip: {
               mode: "index",
@@ -97,7 +98,6 @@ function showResult() {
     resultDiv.style.visibility = "hidden"; // 3秒後に非表示
   }, 5000);
 }
-
 
 // デフォルトの日付を設定する関数
 function setDefaultDates() {

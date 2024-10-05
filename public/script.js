@@ -36,14 +36,14 @@ document.getElementById("runButton").addEventListener("click", () => {
 });
 
 function updateChart() {
-  const fromDate = document.getElementById("fromDateInput").value;
-  const toDate = document.getElementById("toDateInput").value;
   fetch("/api/review-data", {
     method: "GET",
   })
     .then((response) => response.json())
     .then((data) => {
       const ctx = document.getElementById("reviewChart").getContext("2d");
+      const fromDate = data["period"][0];
+      const toDate = data["period"][1];
 
       // 既存のチャートがあれば破棄する
       if (window.reviewChart instanceof Chart) {

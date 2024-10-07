@@ -6,7 +6,7 @@ const fs = require("fs").promises;
 const { exec } = require("child_process"); // child_processモジュールからexec関数をインポート
 
 const app = express();
-const port = 4000;
+const port = 4001;
 const execPromise = util.promisify(exec); // exec関数をPromiseベースの関数に変換
 
 // 静的ファイルの提供
@@ -20,7 +20,7 @@ app.post("/run-python", async (req, res) => {
     console.log("Fetching data from Github...");
     const { fromDate, toDate } = req.body;
     const { stdout, stderr } = await execPromise(
-      `python3 get_git_data.py "${fromDate}" "${toDate}"`
+      `python3 fetch_pr_data.py "${fromDate}" "${toDate}"`
     );
     // ログメッセージを処理
     if (stderr) {

@@ -16,7 +16,7 @@ document.getElementById('runButton').addEventListener('click', () => {
     headers: {
       'Content-Type': 'application/json',  // 送信するデータの形式: JSON
     },
-    body: JSON.stringify({fromDate, toDate}), // 送信するデータ
+    body: JSON.stringify({fromDate, toDate}),  // 送信するデータ
   })
       .then((response) => response.json())
       .then((data) => {
@@ -140,8 +140,14 @@ function showPopup(person, prData) {
   let content = `<h2>${person}'s PRs</h2>`;
   content += '<ul>';
   prData.forEach((pr) => {
-    content += `<li><strong>${pr.title}</strong> (${pr.status}) - <a href="${
-        pr.html_url}" target="_blank">Link</a></li>`;
+    const isClosedPR = pr.status.toLowerCase().includes('close');
+    // Closeの場合は薄いグレーで表示
+    const textColor = isClosedPR ? '#999999' : 'inherit';
+    content += `<li style="color: ${textColor};">
+    <strong>${pr.title}</strong> (${pr.status}) - 
+    <a href="${pr.html_url}" target="_blank" style="color: ${
+        textColor};">Link</a>
+    </li>`;
   });
   content += '</ul>';
 

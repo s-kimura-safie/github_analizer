@@ -9,14 +9,14 @@ document.getElementById('runButton').addEventListener('click', () => {
   }
 
   resultDiv.textContent = 'Fetching data from Github...';
-  resultDiv.style.visibility = 'visible';  // 表示
+  resultDiv.style.visibility = 'visible';
 
   fetch('/run-python', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json',  // 送信するデータの形式: JSON
     },
-    body: JSON.stringify({fromDate, toDate}),
+    body: JSON.stringify({fromDate, toDate}), // 送信するデータ
   })
       .then((response) => response.json())
       .then((data) => {
@@ -67,7 +67,7 @@ function updateChart() {
             plugins: {
               title: {
                 display: true,
-                text: 'Review Activity by Person from ' + fromDate + ' to ' +
+                text: 'Review Activity in AI Vision from ' + fromDate + ' to ' +
                     toDate,
               },
               tooltip: {
@@ -82,7 +82,7 @@ function updateChart() {
                 console.log('Clicked on:', person);
 
                 // クリックされた人のPR情報を取得
-                fetchPRInfo(person);
+                showAuthorPRs(person);
               }
             },
           },
@@ -95,25 +95,25 @@ function updateChart() {
       });
 }
 
-function fetchPRInfo(person) {
+function showAuthorPRs(person) {
   fetch('/api/review-data', {
     method: 'GET',
   })
       .then((response) => response.json())
       .then((data) => {
-        const prData = data['PR_details'];
+        const prData = data['pr_details'];
         console.log('PR Data for', person, ':', prData);
         const filteredPrData =
             prData.filter((item) => item.author.includes(person));
         console.log('Filtered PR Data for', person, ':', filteredPrData);
-        showPRInfoPopup(person, filteredPrData);
+        showPopup(person, filteredPrData);
       })
       .catch((error) => {
         console.error('Error fetching PR info:', error);
       });
 }
 
-function showPRInfoPopup(person, prData) {
+function showPopup(person, prData) {
   // オーバーレイの作成
   const overlay = document.createElement('div');
   overlay.style.position = 'fixed';

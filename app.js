@@ -16,18 +16,18 @@ app.use(express.static('public'));
 app.use(cors());
 app.use(express.json());
 
-// Pythonスクリプトの実行
+// PythonでGithubのデータを更新するエンドポイント
 app.post('/run-python', async (req, res) => {
   try {
     console.log('Fetching data from Github...');
     const {fromDate, toDate} = req.body;
     const {stdout, stderr} =
         await execPromise(`python3 fetch_pr_data.py "${fromDate}" "${toDate}"`);
-    // ログメッセージを処理
+    // Pythonコードのログメッセージを出力
     if (stderr) {
       console.log('Python logs:', stderr);
     }
-    console.log('Python script executed successfully');
+    console.log('Success Fetching data from Github');
     return res.json({message: 'Successfully data updated', data: stdout});
   } catch (error) {
     console.error(`Error: ${error}`);
@@ -35,7 +35,7 @@ app.post('/run-python', async (req, res) => {
   }
 });
 
-// APIエンドポイント
+// Githubのデータを返すエンドポイント
 app.get('/api/review-data', cors(), async (req, res) => {
   try {
     const data = await fs.readFile('github_data.json', 'utf8');

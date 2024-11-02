@@ -120,7 +120,7 @@ function showPopup(person, prData) {
   overlay.style.height = "100%";
   overlay.style.backgroundColor = "rgba(0,0,0,0.5)";
   overlay.style.zIndex = "999";
-  // モーダルの作成
+  // モーダルウィンドウの作成
   const modal = document.createElement("div");
   modal.style.position = "fixed";
   modal.style.left = "50%";
@@ -135,17 +135,40 @@ function showPopup(person, prData) {
 
   // モーダルの内容
   let content = `<h2>${person}'s PRs</h2>`;
-  content += "<ul>";
+  // PRのテーブルを作成
+  content += `
+  <table style="width: 100%; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Title</th>
+        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Status</th>
+        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Link</th>
+      </tr>
+    </thead>
+    <tbody>
+  `;
+
   prData.forEach((pr) => {
-    const isClosedPR = pr.status.toLowerCase().includes("close");
     // Closeの場合は薄いグレーで表示
+    const isClosedPR = pr.status.toLowerCase().includes("close");
     const textColor = isClosedPR ? "#999999" : "inherit";
-    content += `<li style="color: ${textColor};">
-    <strong>${pr.title}</strong> (${pr.status}) - 
-    <a href="${pr.html_url}" target="_blank" style="color: ${textColor};">Link</a>
-    </li>`;
+
+    // PRの情報をテーブルに追加
+    content += `
+      <tr style="color: ${textColor};">
+        <td style="border: 1px solid #ddd; padding: 8px;">${pr.title}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">${pr.status}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">
+          <a href="${pr.html_url}" target="_blank" style="color: ${textColor};">Link</a>
+        </td>
+      </tr>
+    `;
   });
-  content += "</ul>";
+
+  content += `
+    </tbody>
+  </table>
+  `;
 
   modal.innerHTML = content;
   // オーバーレイをクリックしたらモーダルを閉じる

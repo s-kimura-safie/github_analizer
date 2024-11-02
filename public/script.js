@@ -93,6 +93,7 @@ function updateChart() {
     });
 }
 
+// クリックした人物がAuthorのPR情報を表示する関数
 function showAuthorPRs(person) {
   fetch("/api/review-data", {
     method: "GET",
@@ -100,90 +101,65 @@ function showAuthorPRs(person) {
     .then((response) => response.json())
     .then((data) => {
       const prData = data["pr_details"];
-      console.log("PR Data for", person, ":", prData);
       const filteredPrData = prData.filter((item) => item.author.includes(person));
-      console.log("Filtered PR Data for", person, ":", filteredPrData);
-      showPopup(person, filteredPrData);
+      displayOnModal(person, filteredPrData);
     })
     .catch((error) => {
       console.error("Error fetching PR info:", error);
     });
 }
 
-function showPopup(person, prData) {
-  // オーバーレイの作成
-  const overlay = document.createElement("div");
-  overlay.style.position = "fixed";
-  overlay.style.top = "0";
-  overlay.style.left = "0";
-  overlay.style.width = "100%";
-  overlay.style.height = "100%";
-  overlay.style.backgroundColor = "rgba(0,0,0,0.5)";
-  overlay.style.zIndex = "999";
-  // モーダルウィンドウの作成
-  const modal = document.createElement("div");
-  modal.style.position = "fixed";
-  modal.style.left = "50%";
-  modal.style.top = "50%";
-  modal.style.transform = "translate(-50%, -50%)";
-  modal.style.backgroundColor = "white";
-  modal.style.padding = "20px";
-  modal.style.border = "1px solid black";
-  modal.style.zIndex = "1000";
-  modal.style.maxHeight = "80vh";
-  modal.style.overflowY = "auto";
+// モーダル関連の要素を取得
+const modal = document.getElementById("prModal");
+const modalContent = document.getElementById("prModalContent");
+const closeBtn = document.querySelector(".close");
 
-  // モーダルの内容
-  let content = `<h2>${person}'s PRs</h2>`;
-  // PRのテーブルを作成
-  content += `
-  <table style="width: 100%; border-collapse: collapse;">
-    <thead>
-      <tr>
-        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Title</th>
-        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Status</th>
-        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Link</th>
-      </tr>
-    </thead>
-    <tbody>
-  `;
+// モーダルを閉じる関数（グローバルスコープで定義）
+function closeModal() {
+  modal.style.display = "none";
+}
 
+// モーダルを閉じるボタンにイベントリスナーを追加
+closeBtn.onclick = closeModal;
+
+// モーダル外をクリックしたときにモーダルを閉じる
+window.onclick = function (event) {
+  if (event.target == modal) {
+    closeModal();
+  }
+};
+
+// モーダルにPR情報を表示する関数
+function displayOnModal(person, prData) {
+  // テンプレートのbodyを取得
+  const template = document.getElementById("pr-table-template");
+  const tableContent = template.content.cloneNode(true);
+  const tbody = tableContent.querySelector("tbody");
+
+  // データを挿入
   prData.forEach((pr) => {
-    // Closeの場合は薄いグレーで表示
+    const row = document.createElement("tr");
     const isClosedPR = pr.status.toLowerCase().includes("close");
-    const textColor = isClosedPR ? "#999999" : "inherit";
+    if (isClosedPR) {
+      row.classList.add("closed");
+    }
 
-    // PRの情報をテーブルに追加
-    content += `
-      <tr style="color: ${textColor};">
-        <td style="border: 1px solid #ddd; padding: 8px;">${pr.title}</td>
-        <td style="border: 1px solid #ddd; padding: 8px;">${pr.status}</td>
-        <td style="border: 1px solid #ddd; padding: 8px;">
-          <a href="${pr.html_url}" target="_blank" style="color: ${textColor};">Link</a>
-        </td>
-      </tr>
-    `;
+    row.innerHTML = `
+        <td>${pr.title}</td>
+        <td>${pr.status}</td>
+        <td><a href="${pr.html_url}" target="_blank">Link</a></td>
+        `;
+
+    tbody.appendChild(row);
   });
 
-  content += `
-    </tbody>
-  </table>
-  `;
+  // モーダルコンテンツにPR情報を追加
+  modalContent.innerHTML = "";
+  modalContent.appendChild(document.createElement("h2")).textContent = `${person}'s PRs`;
+  modalContent.appendChild(tableContent);
 
-  modal.innerHTML = content;
-  // オーバーレイをクリックしたらモーダルを閉じる
-  overlay.onclick = function () {
-    document.body.removeChild(overlay);
-    document.body.removeChild(modal);
-  };
-
-  // モーダル内のクリックはオーバーレイに伝播させない
-  modal.onclick = function (event) {
-    event.stopPropagation();
-  };
-
-  document.body.appendChild(overlay);
-  document.body.appendChild(modal);
+  // モーダルを表示
+  modal.style.display = "block";
 }
 
 // ページ読み込み時にも初期データを表示

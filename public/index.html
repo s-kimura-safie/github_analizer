@@ -21,6 +21,30 @@
       <div class="chart-container">
         <canvas id="reviewChart"></canvas>
       </div>
+
+      <!-- モーダル用の要素を追加 -->
+      <div id="prModal" class="modal">
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <div id="prModalContent"></div>
+        </div>
+      </div>
+
+      <!-- PR情報表示用のテンプレートを追加 -->
+      <template id="pr-table-template">
+        <table class="pr-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- ここにPRデータを挿入 -->
+          </tbody>
+        </table>
+      </template>
     </div>
     <script src="script.js"></script>
   </body>

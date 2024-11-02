@@ -158,8 +158,9 @@ def update_data(
         data[1][author_index][reviewer_index] += 1
 
 
-def get_github_data(authors, author_count, requested_count, completed_count, from_date, to_date):
+def get_github_data(authors, author_count, requested_count, completed_count, from_date, to_date, pr_details):
     authors = [author.replace("-safie", "") for author in authors]
+    authors = [author.replace("-sf", "") for author in authors]
     return {
         "period": [from_date, to_date],
         "labels": authors,
@@ -177,11 +178,22 @@ def get_github_data(authors, author_count, requested_count, completed_count, fro
                 "data": completed_count.tolist(),
             },
         ],
+        "pr_details": pr_details
     }
 
 
 # Excute main
 def main():
+    if len(sys.argv) > 1:
+        from_date = sys.argv[1]
+        to_date = sys.argv[2]
+    try:
+        datetime.strptime(from_date, "%Y-%m-%d")
+        datetime.strptime(to_date, "%Y-%m-%d")
+    except ValueError:
+        print(json.dumps({"error": "Invalid date format"}))
+        sys.exit(1)
+
     token = cfg.github_token
     authors = cfg.authors
 
@@ -193,16 +205,10 @@ def main():
     else:
         search_api_cache = {}
 
-    # 本日から1週間前までの日付を取得
-    today = datetime.today()
-    week_ago = today - timedelta(weeks=1)
-    week_ago_str = week_ago.strftime("%Y-%m-%d")
-    today_str = today.strftime("%Y-%m-%d")
-
     # Search pull requests
-    pulls = search_pr_by_authors(authors, week_ago_str, today_str, token)  # Rate limit: 10 times per minute
+    pulls = search_pr_by_authors(authors, from_date, to_date, token)  # Rate limit: 10 times per minute
     num_pr_tot = pulls["total_count"]
-    print(f"# searched pull requests: {num_pr_tot}")
+    print(f"Log: # searched pull requests: {num_pr_tot}", file=sys.stderr)
 
     # Load pulls API cache
     pulls_api_cache_filename = "pulls_api_cache.json"
@@ -219,35 +225,37 @@ def main():
     n = len(authors)
     data = np.zeros((2, n, n), dtype=int)  # 1st-axis: requested/reviewed, 2nd-axis: author, 3rd-axis: reviewer
     author_count = np.zeros(n, dtype=int)
-    items = pulls["items"]
-    num_items = len(items)
-    for i in tqdm(range(num_items)):
-        item = items[i]
-        repo_name = item["repository_url"].split("/")[-1]
-        pr_number = item["number"]
-        author = item["user"]["login"]
 
-    pulls_api_cache = {}
-    # Calculate author-reviewer matrix
-    print(
-        f"Call GitHub REST API {2 * num_pr_tot} times. Check GitHub rate limit for more details. Use cache if available."
-    )
-    n = len(authors)
-    data = np.zeros((2, n, n), dtype=int)  # 1st-axis: requested/reviewed, 2nd-axis: author, 3rd-axis: reviewer
-    author_count = np.zeros(n, dtype=int)
     items = pulls["items"]
     num_items = len(items)
+    pr_details = []
     for i in tqdm(range(num_items)):
         item = items[i]
         repo_name = item["repository_url"].split("/")[-1]
         pr_number = item["number"]
         author = item["user"]["login"]
+        title = item["title"]
+        html_url = item["html_url"]
+        status = item["state"]
+        created_day = item["created_at"]
+        closed_day = item["closed_at"]
         reflesh = check_pr_update(item, search_api_cache)
         requested = get_requested_reviewers(repo_name, pr_number, token, pulls_api_cache, reflesh)
         completed = get_completed_reviewers(repo_name, pr_number, author, requested, token, pulls_api_cache, reflesh)
         search_api_cache[item["html_url"]] = item["updated_at"]  # Update timestamp
         author_count[authors.index(author)] += 1
         update_data(data, repo_name, pr_number, author, authors, requested, completed)
+        pr_detail = {
+            "author": author,
+            "title": title,
+            "html_url": html_url,
+            "status": status,
+            "created_day": created_day,
+            "closed_day": closed_day,
+            "requested": requested,
+            "completed": completed,
+        }
+        pr_details.append(pr_detail)
     json.dump(pulls_api_cache, open(pulls_api_cache_filename, "w"), indent=2)
     json.dump(search_api_cache, open(search_api_cache_filename, "w"), indent=2)
     print("Author-reviewer matrix (review-requested, review-completed): ")
@@ -256,12 +264,8 @@ def main():
     for i in range(n):
         print(f"{authors[i]}: {author_count[i]}, {requested_count[i]}, {completed_count[i]}")
 
-    data = get_github_data(authors, author_count, requested_count, completed_count, week_ago_str, today_str)
-    json.dump(data, open("github_data.json", "w"), indent=2)
-
-    # Response
-    json.dump(data, sys.stdout)
-    sys.stdout.flush()
+    data = get_github_data(authors, author_count, requested_count, completed_count, from_date, to_date, pr_details)
+    json.dump(data, open("github_data.json", "w"), indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":

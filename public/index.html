@@ -1,19 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GitHub Review Analysis</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>GitHub Review Analysis</h1>
-        <div class="chart-container">
-            <canvas id="reviewChart"></canvas>
+      <h1>GitHub Review Analysis</h1>
+      <div class="input-container">
+        <a>from</a>
+        <input type="date" id="fromDateInput" />
+        <a>to</a>
+        <input type="date" id="toDateInput" />
+        <button id="runButton">Update</button>
+      </div>
+      <div id="result"></div>
+      <div class="chart-container">
+        <canvas id="reviewChart"></canvas>
+      </div>
+
+      <!-- モーダル用の要素を追加 -->
+      <div id="prModal" class="modal">
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <div id="prModalContent"></div>
         </div>
+      </div>
+
+      <!-- PR情報表示用のテンプレートを追加 -->
+      <template id="pr-table-template">
+        <table class="pr-table">
+          <thead>
+            <tr>
+              <th>Open</th>
+              <th>Close</th>
+              <th>Duration</th>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- ここにPRデータを挿入 -->
+          </tbody>
+        </table>
+      </template>
     </div>
     <script src="script.js"></script>
-</body>
+  </body>
 </html>

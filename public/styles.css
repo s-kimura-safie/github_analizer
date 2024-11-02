@@ -1,39 +1,151 @@
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f0f0f0;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f0f0f0;
 }
 
 .container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 h1 {
-    text-align: center;
-    color: #333;
+  text-align: center;
+  color: #333;
 }
 
 .chart-container {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  padding: 20px;
 }
 
 button {
-    background-color: #4CAF50;
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    border-radius: 5px;
+  background-color: #4caf50;
+  border: 2px solid transparent;
+  color: white;
+  padding: 5px 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-left: 15px; /* 左側の余白を追加 */
+}
+
+#runButton:hover {
+  background-color: #cff160;
+  border: 2px solid #4caf50;
+  color: #4caf50;
+}
+
+.input-container {
+  margin: 0 10px; /* 'from' と 'to' の両側に余白を追加 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+#fromDateInput,
+#toDateInput {
+  margin: 0 10px;
+  margin-right: 20px;
+  padding: 5px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+#result {
+  text-align: center;
+  visibility: hidden; /* 初期状態で非表示 */
+  margin-bottom: 5px;
+  color: indianred;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* PR表のスタイル */
+.pr-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.pr-table th,
+.pr-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.pr-table th {
+  background-color: #e8be3d82;
+}
+
+.pr-table .closed {
+  color: #999999;
+}
+
+/* 各列の幅を指定 */
+.pr-table th:nth-child(1),
+.pr-table td:nth-child(1) { width: 8%; } /* open */
+
+.pr-table th:nth-child(2),
+.pr-table td:nth-child(2) { width: 8%; } /* close */
+
+.pr-table th:nth-child(3),
+.pr-table td:nth-child(3) { width: 4%; } /* duration */
+
+.pr-table th:nth-child(4),
+.pr-table td:nth-child(4) { width: 30%; } /* Title */
+
+.pr-table th:nth-child(5),
+.pr-table td:nth-child(5) { width: 4%; } /* Status */
+
+.pr-table th:nth-child(6),
+.pr-table td:nth-child(6) { width: 4%; } /* Link */
+
+.pr-table .closed {
+  color: #999999;
 }

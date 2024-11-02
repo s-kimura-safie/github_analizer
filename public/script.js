@@ -1,3 +1,10 @@
+// ページ読み込み時にも初期データを表示
+document.addEventListener("DOMContentLoaded", () => {
+  setDefaultDates();
+  updateChart();
+});
+
+// ボタンクリック時の処理
 document.getElementById("runButton").addEventListener("click", () => {
   const resultDiv = document.getElementById("result");
   const fromDate = document.getElementById("fromDateInput").value;
@@ -144,7 +151,23 @@ function displayOnModal(person, prData) {
       row.classList.add("closed");
     }
 
+    created_day = new Date(pr.created_day);
+    str_created_day = formatDate(created_day);
+
+    if (pr.closed_day === null) {
+      str_closed_day = "-";
+      daysDiff = "-";
+    }
+    else {
+      closed_day = new Date(pr.closed_day);
+      daysDiff = dateDiffInDays(created_day, closed_day) + 1;
+      str_closed_day = formatDate(closed_day);
+    }
+    
     row.innerHTML = `
+        <td>${str_created_day}</td>
+        <td>${str_closed_day}</td>
+        <td>${daysDiff}</td>
         <td>${pr.title}</td>
         <td>${pr.status}</td>
         <td><a href="${pr.html_url}" target="_blank">Link</a></td>
@@ -162,12 +185,7 @@ function displayOnModal(person, prData) {
   modal.style.display = "block";
 }
 
-// ページ読み込み時にも初期データを表示
-document.addEventListener("DOMContentLoaded", () => {
-  setDefaultDates();
-  updateChart();
-});
-
+// データ更新の結果を表示する関数
 function showResult() {
   const resultDiv = document.getElementById("result");
   resultDiv.textContent = "Successfully data updated";
@@ -196,4 +214,18 @@ function formatDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function dateDiffInDays(date1, date2) {
+  const dt1 = new Date(date1);
+  const dt2 = new Date(date2);
+  
+  // UTC日付に変換（時差の影響を排除）
+  const utc1 = Date.UTC(dt1.getFullYear(), dt1.getMonth(), dt1.getDate());
+  const utc2 = Date.UTC(dt2.getFullYear(), dt2.getMonth(), dt2.getDate());
+
+  // 日数の差を計算（ミリ秒を日に変換）
+  const diffDays = Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
+  
+  return diffDays;
 }

@@ -1,4 +1,4 @@
-pyenv
+venv
 node_modules
 config.py
 *.json

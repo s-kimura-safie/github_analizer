@@ -138,33 +138,27 @@ window.onclick = function (event) {
   }
 };
 
-// モーダルにPR情報を表示する関数
-function displayOnModal(person, authorPrs, requestedPrs) {
-  // テンプレートのbodyを取得
-  const template = document.getElementById("pr-table-template");
-  const authorTableContent = template.content.cloneNode(true);
-  const tbodyAuth = authorTableContent.querySelector("tbody");
-  const requestedTableContent = template.content.cloneNode(true);
-  const tbodyReq = requestedTableContent.querySelector("tbody");
-
-  // データを挿入
-  authorPrs.forEach((pr) => {
+// PRデータを表に挿入する関数
+function insertPRData(prs, tbody) {
+  prs.forEach((pr) => {
     const row = document.createElement("tr");
     const isClosedPR = pr.status.toLowerCase().includes("close");
     if (isClosedPR) {
       row.classList.add("closed");
     }
 
-    created_day = new Date(pr.created_day);
-    str_created_day = formatDate(created_day);
+    const created_day = new Date(pr.created_day);
+    const str_created_day = formatDate(created_day);
 
+    let str_closed_day, daysDiff;
     if (pr.closed_day === null) {
       str_closed_day = "-";
-      daysDiff = "-";
-    } else {
-      closed_day = new Date(pr.closed_day);
+      const closed_day = new Date(); // PRがクローズされていない場合は、今日の日付を使用
       daysDiff = dateDiffInDays(created_day, closed_day) + 1;
+    } else {
+      const closed_day = new Date(pr.closed_day);
       str_closed_day = formatDate(closed_day);
+      daysDiff = dateDiffInDays(created_day, closed_day) + 1;
     }
 
     row.innerHTML = `
@@ -174,55 +168,37 @@ function displayOnModal(person, authorPrs, requestedPrs) {
         <td>${pr.title}</td>
         <td>${pr.status}</td>
         <td><a href="${pr.html_url}" target="_blank">Link</a></td>
-        `;
+      `;
 
-        tbodyAuth.appendChild(row);
+    tbody.appendChild(row);
   });
+}
 
-  // データを挿入
-  requestedPrs.forEach((pr) => {
-    const row = document.createElement("tr");
-    const isClosedPR = pr.status.toLowerCase().includes("close");
-    if (isClosedPR) {
-      row.classList.add("closed");
-    }
+// モーダルにPR情報を表示する関数
+function displayOnModal(person, authorPrs, requestedPrs) {
+  // テンプレートのbodyを取得
+  const template = document.getElementById("pr-table-template");
 
-    created_day = new Date(pr.created_day);
-    str_created_day = formatDate(created_day);
-
-    if (pr.closed_day === null) {
-      str_closed_day = "-";
-      // PRがクローズされていない場合は、今日の日付を使用
-      closed_day = new Date();
-      daysDiff = dateDiffInDays(created_day, closed_day) + 1;
-    } else {
-      closed_day = new Date(pr.closed_day);
-      str_closed_day = formatDate(closed_day);
-      daysDiff = dateDiffInDays(created_day, closed_day) + 1;
-    }
-
-    row.innerHTML = `
-          <td>${str_created_day}</td>
-          <td>${str_closed_day}</td>
-          <td>${daysDiff}</td>
-          <td>${pr.title}</td>
-          <td>${pr.status}</td>
-          <td><a href="${pr.html_url}" target="_blank">Link</a></td>
-          `;
-
-    tbodyReq.appendChild(row);
-  });
-
-  // モーダルコンテンツにPR情報を追加
-  modalContent.innerHTML = "";
-  modalContent.appendChild(document.createElement("h2")).textContent = `${person}'s PRs`;
-  modalContent.appendChild(document.createElement("h3")).textContent = `Author`;
-  modalContent.appendChild(authorTableContent);
-  modalContent.appendChild(document.createElement("h3")).textContent = `Requested`;
-  modalContent.appendChild(requestedTableContent);
-
-  // モーダルを表示
-  modal.style.display = "block";
+    // Author PRsのテーブルを作成
+    const authorTableContent = template.content.cloneNode(true);
+    const tbodyAuthor = authorTableContent.querySelector("tbody");
+    insertPRData(authorPrs, tbodyAuthor);
+  
+    // Requested PRsのテーブルを作成
+    const requestedTableContent = template.content.cloneNode(true);
+    const tbodyReqested = requestedTableContent.querySelector("tbody");
+    insertPRData(requestedPrs, tbodyReqested);
+  
+    // モーダルコンテンツにPR情報を追加
+    modalContent.innerHTML = "";
+    modalContent.appendChild(document.createElement("h2")).textContent = `${person}'s PRs`;
+    modalContent.appendChild(document.createElement("h3")).textContent = "Author";
+    modalContent.appendChild(authorTableContent);
+    modalContent.appendChild(document.createElement("h3")).textContent = "Requested";
+    modalContent.appendChild(requestedTableContent);
+  
+    // モーダルを表示
+    modal.style.display = "block";
 }
 
 // データ更新の結果を表示する関数

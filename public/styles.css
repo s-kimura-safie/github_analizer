@@ -119,8 +119,12 @@ button {
   text-align: left;
 }
 
-.pr-table th {
-  background-color: #e8be3d82;
+.pr-table-author th {
+  background-color: #9ad1f5bc;
+}
+
+.pr-table-requested th {
+  background-color: #ffb1c1bc
 }
 
 .pr-table .closed {
@@ -129,22 +133,34 @@ button {
 
 /* 各列の幅を指定 */
 .pr-table th:nth-child(1),
-.pr-table td:nth-child(1) { width: 8%; } /* open */
+.pr-table td:nth-child(1) {
+  width: 8%;
+} /* open */
 
 .pr-table th:nth-child(2),
-.pr-table td:nth-child(2) { width: 8%; } /* close */
+.pr-table td:nth-child(2) {
+  width: 8%;
+} /* close */
 
 .pr-table th:nth-child(3),
-.pr-table td:nth-child(3) { width: 4%; } /* duration */
+.pr-table td:nth-child(3) {
+  width: 4%;
+} /* duration */
 
 .pr-table th:nth-child(4),
-.pr-table td:nth-child(4) { width: 30%; } /* Title */
+.pr-table td:nth-child(4) {
+  width: 30%;
+} /* Title */
 
 .pr-table th:nth-child(5),
-.pr-table td:nth-child(5) { width: 4%; } /* Status */
+.pr-table td:nth-child(5) {
+  width: 4%;
+} /* Status */
 
 .pr-table th:nth-child(6),
-.pr-table td:nth-child(6) { width: 4%; } /* Link */
+.pr-table td:nth-child(6) {
+  width: 4%;
+} /* Link */
 
 .pr-table .closed {
   color: #999999;

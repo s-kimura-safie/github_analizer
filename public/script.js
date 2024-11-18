@@ -181,11 +181,15 @@ function displayOnModal(person, authorPrs, requestedPrs) {
 
     // Author PRsのテーブルを作成
     const authorTableContent = template.content.cloneNode(true);
+    const tableAuth = authorTableContent.querySelector("table");
+    tableAuth.classList.add("pr-table-author");
     const tbodyAuthor = authorTableContent.querySelector("tbody");
     insertPRData(authorPrs, tbodyAuthor);
   
     // Requested PRsのテーブルを作成
     const requestedTableContent = template.content.cloneNode(true);
+    tableReq = requestedTableContent.querySelector("table");
+    tableReq.classList.add("pr-table-requested");
     const tbodyReqested = requestedTableContent.querySelector("tbody");
     insertPRData(requestedPrs, tbodyReqested);
   

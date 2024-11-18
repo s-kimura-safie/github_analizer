@@ -108,8 +108,10 @@ function showAuthorPRs(person) {
     .then((response) => response.json())
     .then((data) => {
       const prData = data["pr_details"];
-      const filteredPrData = prData.filter((item) => item.author.includes(person));
-      displayOnModal(person, filteredPrData);
+      const authorPrs = prData.filter((item) => item.author.includes(person));
+      // const requestedPrs = prData.filter((item) => item.requested.includes(person));
+      const requestedPrs = prData.filter((item) => item.requested.some((req) => req.includes(person)));
+      displayOnModal(person, authorPrs, requestedPrs);
     })
     .catch((error) => {
       console.error("Error fetching PR info:", error);
@@ -136,34 +138,29 @@ window.onclick = function (event) {
   }
 };
 
-// モーダルにPR情報を表示する関数
-function displayOnModal(person, prData) {
-  // テンプレートのbodyを取得
-  const template = document.getElementById("pr-table-template");
-  const tableContent = template.content.cloneNode(true);
-  const tbody = tableContent.querySelector("tbody");
-
-  // データを挿入
-  prData.forEach((pr) => {
+// PRデータを表に挿入する関数
+function insertPRData(prs, tbody) {
+  prs.forEach((pr) => {
     const row = document.createElement("tr");
     const isClosedPR = pr.status.toLowerCase().includes("close");
     if (isClosedPR) {
       row.classList.add("closed");
     }
 
-    created_day = new Date(pr.created_day);
-    str_created_day = formatDate(created_day);
+    const created_day = new Date(pr.created_day);
+    const str_created_day = formatDate(created_day);
 
+    let str_closed_day, daysDiff;
     if (pr.closed_day === null) {
       str_closed_day = "-";
-      daysDiff = "-";
-    }
-    else {
-      closed_day = new Date(pr.closed_day);
+      const closed_day = new Date(); // PRがクローズされていない場合は、今日の日付を使用
       daysDiff = dateDiffInDays(created_day, closed_day) + 1;
+    } else {
+      const closed_day = new Date(pr.closed_day);
       str_closed_day = formatDate(closed_day);
+      daysDiff = dateDiffInDays(created_day, closed_day) + 1;
     }
-    
+
     row.innerHTML = `
         <td>${str_created_day}</td>
         <td>${str_closed_day}</td>
@@ -171,18 +168,41 @@ function displayOnModal(person, prData) {
         <td>${pr.title}</td>
         <td>${pr.status}</td>
         <td><a href="${pr.html_url}" target="_blank">Link</a></td>
-        `;
+      `;
 
     tbody.appendChild(row);
   });
+}
 
-  // モーダルコンテンツにPR情報を追加
-  modalContent.innerHTML = "";
-  modalContent.appendChild(document.createElement("h2")).textContent = `${person}'s PRs`;
-  modalContent.appendChild(tableContent);
+// モーダルにPR情報を表示する関数
+function displayOnModal(person, authorPrs, requestedPrs) {
+  // テンプレートのbodyを取得
+  const template = document.getElementById("pr-table-template");
 
-  // モーダルを表示
-  modal.style.display = "block";
+    // Author PRsのテーブルを作成
+    const authorTableContent = template.content.cloneNode(true);
+    const tableAuth = authorTableContent.querySelector("table");
+    tableAuth.classList.add("pr-table-author");
+    const tbodyAuthor = authorTableContent.querySelector("tbody");
+    insertPRData(authorPrs, tbodyAuthor);
+  
+    // Requested PRsのテーブルを作成
+    const requestedTableContent = template.content.cloneNode(true);
+    tableReq = requestedTableContent.querySelector("table");
+    tableReq.classList.add("pr-table-requested");
+    const tbodyReqested = requestedTableContent.querySelector("tbody");
+    insertPRData(requestedPrs, tbodyReqested);
+  
+    // モーダルコンテンツにPR情報を追加
+    modalContent.innerHTML = "";
+    modalContent.appendChild(document.createElement("h2")).textContent = `${person}'s PRs`;
+    modalContent.appendChild(document.createElement("h3")).textContent = "Author";
+    modalContent.appendChild(authorTableContent);
+    modalContent.appendChild(document.createElement("h3")).textContent = "Requested";
+    modalContent.appendChild(requestedTableContent);
+  
+    // モーダルを表示
+    modal.style.display = "block";
 }
 
 // データ更新の結果を表示する関数
@@ -219,13 +239,13 @@ function formatDate(date) {
 function dateDiffInDays(date1, date2) {
   const dt1 = new Date(date1);
   const dt2 = new Date(date2);
-  
+
   // UTC日付に変換（時差の影響を排除）
   const utc1 = Date.UTC(dt1.getFullYear(), dt1.getMonth(), dt1.getDate());
   const utc2 = Date.UTC(dt2.getFullYear(), dt2.getMonth(), dt2.getDate());
 
   // 日数の差を計算（ミリ秒を日に変換）
   const diffDays = Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
-  
+
   return diffDays;
 }

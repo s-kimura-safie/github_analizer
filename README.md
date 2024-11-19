@@ -1,8 +1,10 @@
 ## 環境構築
 [こちら](https://www.notion.so/safie/Express-js-137b6aee49b980959e96fbb109c4d7a6?pvs=4#137b6aee49b9809294bddd532d112b9e)の手順を参考にnvm, node.js, npm, express.js をインストールしてください。
 
-## npmパッケージのインストール
+## npmパッケージの追加インストール
+```
 npm install cors
+```
 
 ## pythonパッケージのインストール
 ```

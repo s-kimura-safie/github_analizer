@@ -57,6 +57,9 @@ function updateChart() {
         window.reviewChart.destroy();
       }
 
+      // データセットの最大値を計算
+      const maxValue = Math.max(...data.datasets.flatMap(dataset => dataset.data));
+
       window.reviewChart = new Chart(ctx, {
         type: "bar",
         data: data,
@@ -69,6 +72,7 @@ function updateChart() {
             y: {
               stacked: true,
               beginAtZero: true,
+              max: maxValue + 2, 
             },
           },
           plugins: {

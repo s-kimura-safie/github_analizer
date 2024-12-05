@@ -9,6 +9,7 @@ document.getElementById("runButton").addEventListener("click", () => {
   const resultDiv = document.getElementById("result");
   const fromDate = document.getElementById("fromDateInput").value;
   const toDate = document.getElementById("toDateInput").value;
+  const loading = document.getElementById('loading');
 
   if (!fromDate || !toDate) {
     alert("両方の日付を選択してください");
@@ -17,6 +18,8 @@ document.getElementById("runButton").addEventListener("click", () => {
 
   resultDiv.textContent = "Fetching data from Github...";
   resultDiv.style.visibility = "visible";
+
+  loading.style.display = 'block'; // ローディング表示
 
   fetch("/run-python", {
     method: "POST",
@@ -39,6 +42,9 @@ document.getElementById("runButton").addEventListener("click", () => {
     })
     .catch((error) => {
       console.error("Error:", error);
+    })
+    .finally(() => {
+      loading.style.display = 'none'; // ローディング非表示
     });
 });
 
@@ -79,6 +85,9 @@ function updateChart() {
             title: {
               display: true,
               text: "Review Activity in AI Vision from " + fromDate + " to " + toDate,
+              font: {
+                size: 20,
+              }
             },
             tooltip: {
               mode: "index",

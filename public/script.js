@@ -221,15 +221,18 @@ function showResult() {
 
 // デフォルトの日付を設定する関数
 function setDefaultDates() {
-  const today = new Date();
-  const oneWeekAgo = new Date(today);
-  oneWeekAgo.setDate(today.getDate() - 7);
-
-  const toDateInput = document.getElementById("toDateInput");
-  const fromDateInput = document.getElementById("fromDateInput");
-
-  toDateInput.value = formatDate(today);
-  fromDateInput.value = formatDate(oneWeekAgo);
+  fetch("/api/review-data", {
+    method: "GET",
+  })
+    .then((response) => response.json())
+    .then((data) => {
+    const fromDate = data["period"][0];
+    const toDate = data["period"][1];
+    const toDateInput = document.getElementById("toDateInput");
+    const fromDateInput = document.getElementById("fromDateInput");
+    fromDateInput.value = fromDate;
+    toDateInput.value = toDate;
+  })
 }
 
 // 日付をYYYY-MM-DD形式にフォーマットする関数

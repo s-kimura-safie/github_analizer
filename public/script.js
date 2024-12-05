@@ -58,7 +58,7 @@ function updateChart() {
       }
 
       // データセットの最大値を計算
-      const maxValue = Math.max(...data.datasets.flatMap(dataset => dataset.data));
+      let maxPrNum = calcMaxPrNum(data);
 
       window.reviewChart = new Chart(ctx, {
         type: "bar",
@@ -72,7 +72,7 @@ function updateChart() {
             y: {
               stacked: true,
               beginAtZero: true,
-              max: maxValue + 2, 
+              max: maxPrNum + 2, 
             },
           },
           plugins: {
@@ -252,4 +252,19 @@ function dateDiffInDays(date1, date2) {
   const diffDays = Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
 
   return diffDays;
+}
+
+function calcMaxPrNum(prData) {
+  let maxPrNum = 0;
+  for (let memberIdx = 0; memberIdx < prData.labels.length; memberIdx++) {
+    let sum = 0;
+    for (let datasetIdx = 0; datasetIdx < prData.datasets.length; datasetIdx++) {
+      prNum = prData.datasets[datasetIdx].data[memberIdx];
+      sum += prNum;
+    }
+    if (sum > maxPrNum) {
+      maxPrNum = sum;
+    }
+  }
+  return maxPrNum;
 }

@@ -24,7 +24,15 @@ h1 {
   padding: 20px;
 }
 
-button {
+.input-container {
+  margin: 0 10px; /* 'from' と 'to' の両側に余白を追加 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.input-container button {
   background-color: #4caf50;
   border: 2px solid transparent;
   color: white;
@@ -45,13 +53,35 @@ button {
   color: #4caf50;
 }
 
-.input-container {
+.template-inputs {
   margin: 0 10px; /* 'from' と 'to' の両側に余白を追加 */
   display: flex;
   justify-content: center;
   align-items: center;
   margin-bottom: 5px;
 }
+
+.template-inputs button {
+  background-color: #a9f53d8e;
+  border: 2px solid transparent;
+  color: rgb(1, 77, 1);
+  padding: 10px 10px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 10px;
+  margin-left: 15px; /* 左側の余白を追加 */
+}
+
+.template-inputs button:hover {
+  background-color: #cff160;
+  border: 2px solid #4caf50;
+  color: #4caf50;
+}
+
 
 #fromDateInput,
 #toDateInput {

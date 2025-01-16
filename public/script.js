@@ -4,29 +4,49 @@ document.addEventListener("DOMContentLoaded", () => {
   updateChart();
 });
 
-// ボタンクリック時の処理
+// 手動日付選択のボタンクリック処理
 document.getElementById("runButton").addEventListener("click", () => {
-  const resultDiv = document.getElementById("result");
   const fromDate = document.getElementById("fromDateInput").value;
   const toDate = document.getElementById("toDateInput").value;
-  const loading = document.getElementById('loading');
 
   if (!fromDate || !toDate) {
     alert("両方の日付を選択してください");
     return;
   }
 
+  fetchGithubData(fromDate, toDate);
+});
+
+// 週間ボタンクリック処理
+document.getElementById("weekly-btn").addEventListener("click", () => {
+  const toDate = new Date().toISOString().split('T')[0];
+  const fromDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  fetchGithubData(fromDate, toDate);
+});
+
+// 月間ボタンクリック処理
+document.getElementById("monthly-btn").addEventListener("click", () => {
+  const toDate = new Date().toISOString().split('T')[0];
+  const fromDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  fetchGithubData(fromDate, toDate);
+});
+
+function fetchGithubData(fromDate, toDate) {
+  const resultDiv = document.getElementById("result");
+  const loading = document.getElementById('loading');
+
   resultDiv.textContent = "Fetching data from Github...";
   resultDiv.style.visibility = "visible";
-
-  loading.style.display = 'block'; // ローディング表示
+  loading.style.display = 'block';
 
   fetch("/run-python", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json", // 送信するデータの形式: JSON
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify({ fromDate, toDate }), // 送信するデータ
+    body: JSON.stringify({ fromDate, toDate }),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -44,9 +64,9 @@ document.getElementById("runButton").addEventListener("click", () => {
       console.error("Error:", error);
     })
     .finally(() => {
-      loading.style.display = 'none'; // ローディング非表示
+      loading.style.display = 'none';
     });
-});
+}
 
 function updateChart() {
   fetch("/api/review-data", {

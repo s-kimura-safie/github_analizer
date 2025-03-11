@@ -75,6 +75,10 @@ function updateChart() {
     .then((response) => response.json())
     .then((data) => {
       const ctx = document.getElementById("reviewChart").getContext("2d");
+      data.datasets = [data.datasets[2], data.datasets[1], data.datasets[0]];
+      data.datasets[0].backgroundColor = "#439D64";;
+      data.datasets[1].backgroundColor = "#FF6565";
+      data.datasets[2].backgroundColor = "#40A2C0";
       const fromDate = data["period"][0];
       const toDate = data["period"][1];
 

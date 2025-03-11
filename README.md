@@ -23,6 +23,11 @@ github_token = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 node app.js
 ```
 
+以下のコマンドで実行するとアプリは継続的に起動し続けます。
+```
+pm2 start app.js
+```
+
 ## TODO
 - ~~python実行後にデータ更新~~
 - ~~日付をボタンからPOST~~

@@ -2,12 +2,63 @@ import sys
 import json
 import os
 import re
-from datetime import datetime, timedelta
+import dataclasses
+from datetime import datetime, timedelta, timezone
+from typing import Generator
+from zoneinfo import ZoneInfo
 
 import config as cfg
 import numpy as np  # 40 ms
 import requests
+from holiday_jp import HolidayJp
 from tqdm import tqdm
+
+
+@dataclasses.dataclass
+class PullRequest:
+    title: str
+    created: datetime
+    first_review: datetime | None
+    closed: datetime | None
+    is_merged: bool
+    num_comments: int
+
+    @staticmethod
+    def daterange(start: datetime, end: datetime) -> Generator[datetime, None, None]:
+        current = start
+        while current <= end:
+            yield current
+            current += timedelta(days=1)
+
+    def is_closed(self) -> bool:
+        return self.closed is not None
+
+    def elapsed(self) -> timedelta:
+        if self.closed is None:
+            return datetime.now().astimezone(ZoneInfo("Asia/Tokyo")) - self.created
+        return self.closed - self.created
+
+    def elapsed_business_days(self) -> timedelta:
+        if self.closed is None:
+            end_dt = datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
+        else:
+            end_dt = self.closed
+
+        for dt in self.daterange(self.created, end_dt):
+            if not HolidayJp(dt.date()).is_business_day:
+                end_dt -= timedelta(days=1)
+        return end_dt - self.created
+
+    def first_review_elapsed_business_days(self) -> timedelta:
+        if self.first_review is None:
+            end_dt = datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
+        else:
+            end_dt = self.first_review
+
+        for dt in self.daterange(self.created, end_dt):
+            if not HolidayJp(dt.date()).is_business_day:
+                end_dt -= timedelta(days=1)
+        return end_dt - self.created
 
 
 def validate_date(date_string: str) -> None:
@@ -21,6 +72,13 @@ def validate_period(from_date: str, to_date: str) -> None:
     if from_date > to_date:
         print("from_date must be earlier than to_date")
         sys.exit(1)
+
+
+def convert_to_jst(time_str: str | None) -> datetime | None:
+    if time_str is None:
+        return None
+    time_dt = datetime.strptime(time_str.replace("Z", ""), "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+    return time_dt.astimezone(ZoneInfo("Asia/Tokyo"))
 
 
 def search_pr_by_authors(usernames: list[str], from_date: str, to_date: str, token: str) -> dict:
@@ -71,13 +129,18 @@ def check_pr_update(item: dict, search_api_cache: dict) -> bool:
 
 
 def get_requested_reviewers(
-    repository: str, pr_number: int, token: str, pulls_api_cache: dict, reflesh: bool
+    owner: str,
+    repository: str,
+    pr_number: int,
+    token: str,
+    pulls_api_cache: dict,
+    refresh: bool,
 ) -> list[str]:
     # Use GET /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers
 
-    url = f"https://api.github.com/repos/SafieDev/{repository}/pulls/{pr_number}/requested_reviewers"
+    url = f"https://api.github.com/repos/{owner}/{repository}/pulls/{pr_number}/requested_reviewers"
 
-    if url not in pulls_api_cache or reflesh:
+    if url not in pulls_api_cache or refresh:
         headers = {
             "Accept": "application/vnd.github.text-match+json",
             "Authorization": f"Bearer {token}",
@@ -99,14 +162,19 @@ def get_requested_reviewers(
     return reviewers
 
 
-def get_completed_reviewers(
-    repository: str, pr_number: int, author: str, requested: list, token: str, pulls_api_cache: dict, reflesh: bool
-) -> list[str]:
+def refresh_reviews_api_cache(
+    owner: str,
+    repository: str,
+    pr_number: int,
+    token: str,
+    pulls_api_cache: dict,
+    refresh: bool,
+) -> None:
     # Use GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews
 
-    url = f"https://api.github.com/repos/SafieDev/{repository}/pulls/{pr_number}/reviews"
+    url = f"https://api.github.com/repos/{owner}/{repository}/pulls/{pr_number}/reviews"
 
-    if url not in pulls_api_cache or reflesh:
+    if url not in pulls_api_cache or refresh:
         headers = {
             "Accept": "application/vnd.github.text-match+json",
             "Authorization": f"Bearer {token}",
@@ -119,8 +187,19 @@ def get_completed_reviewers(
             sys.exit(1)
         response_json = response.json()
         pulls_api_cache[url] = response_json
-    else:
-        response_json = pulls_api_cache[url]
+
+
+def get_completed(
+    owner: str,
+    repository: str,
+    pr_number: int,
+    author: str,
+    requested: list[str],
+    pulls_api_cache: dict,
+) -> list[str]:
+    url = f"https://api.github.com/repos/{owner}/{repository}/pulls/{pr_number}/reviews"
+
+    response_json = pulls_api_cache[url]
 
     reviewers = []
     for review in response_json:
@@ -137,8 +216,72 @@ def get_completed_reviewers(
     return reviewers
 
 
-def update_data(
-    data: np.ndarray, repo_name: str, pr_number: int, author: str, authors: list, requested: list, completed: list
+def get_first_person_review(
+    owner: str, repository: str, pr_number: int, author: str, pulls_api_cache: dict
+) -> datetime | None:
+    url = f"https://api.github.com/repos/{owner}/{repository}/pulls/{pr_number}/reviews"
+
+    response_json = pulls_api_cache[url]
+
+    for review in response_json:
+        if review["user"]["login"] == author:
+            continue
+        elif review["user"]["login"] == "copilot-pull-request-reviewer[bot]":
+            continue
+        return convert_to_jst(review["submitted_at"])
+
+    return None
+
+
+def refresh_cache(url: str, api_cache: dict, token: str) -> None:
+    headers = {
+        "Accept": "application/vnd.github.text-match+json",
+        "Authorization": f"Bearer {token}",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print(response)
+        sys.exit(1)
+    response_json = response.json()
+    api_cache[url] = response_json
+
+
+def refresh_pulls_api_cache(
+    owner: str,
+    repository: str,
+    pr_number: int,
+    pulls_api_cache: dict,
+    token: str,
+    refresh: bool,
+) -> None:
+    url = f"https://api.github.com/repos/{owner}/{repository}/pulls/{pr_number}"
+    if url not in pulls_api_cache or refresh:
+        refresh_cache(url, pulls_api_cache, token)
+
+
+def get_pull_request(owner: str, repository: str, pr_number: int, author: str, pulls_api_cache: dict) -> PullRequest:
+    url = f"https://api.github.com/repos/{owner}/{repository}/pulls/{pr_number}"
+    assert url in pulls_api_cache
+
+    response_json = pulls_api_cache[url]
+    title = response_json["title"]
+    created = convert_to_jst(response_json["created_at"])
+    assert created is not None
+    closed = convert_to_jst(response_json["closed_at"])
+    is_merged = response_json["merged"]
+    num_comments = response_json["comments"] + response_json["review_comments"]
+    return PullRequest(title, created, None, closed, is_merged, num_comments)
+
+
+def update_matrix_data(
+    data: np.ndarray,
+    repo_name: str,
+    pr_number: int,
+    author: str,
+    authors: list[str],
+    requested: list[str],
+    completed: list[str],
 ) -> None:
     author_index = authors.index(author)
     for reviewer in requested:
@@ -158,7 +301,15 @@ def update_data(
         data[1][author_index][reviewer_index] += 1
 
 
-def get_github_data(authors, author_count, requested_count, completed_count, from_date, to_date, pr_details):
+def get_github_data(
+    authors,
+    author_count,
+    requested_count,
+    completed_count,
+    from_date,
+    to_date,
+    pr_details,
+):
     authors = [author.replace("-safie", "") for author in authors]
     authors = [author.replace("-sf", "") for author in authors]
     return {
@@ -167,7 +318,7 @@ def get_github_data(authors, author_count, requested_count, completed_count, fro
         "datasets": [
             {
                 "label": "Author",
-                "data": author_count.tolist(),
+                "data": author_count,
             },
             {
                 "label": "Review Requested",
@@ -178,7 +329,7 @@ def get_github_data(authors, author_count, requested_count, completed_count, fro
                 "data": completed_count.tolist(),
             },
         ],
-        "pr_details": pr_details
+        "pr_details": pr_details,
     }
 
 
@@ -219,18 +370,19 @@ def main():
         pulls_api_cache = {}
 
     # Calculate author-reviewer matrix
-    print(
-        f"Call GitHub REST API {2 * num_pr_tot} times. Check GitHub rate limit for more details. Use cache if available."
-    )
+    print(f"Call GitHub REST API {2 * num_pr_tot} times. Check GitHub rate limit for more details. Use cache if available.")
     n = len(authors)
-    data = np.zeros((2, n, n), dtype=int)  # 1st-axis: requested/reviewed, 2nd-axis: author, 3rd-axis: reviewer
+    data = np.zeros((2, n, n), dtype=int)  # (requested/reviewed, author, reviewer)
+    pull_requests: dict[str, list[PullRequest]] = {author: [] for author in authors}
     author_count = np.zeros(n, dtype=int)
 
     items = pulls["items"]
     num_items = len(items)
     pr_details = []
     for i in tqdm(range(num_items)):
+        # fetch した PR の情報を取得
         item = items[i]
+        owner = item["repository_url"].split("/")[-2]
         repo_name = item["repository_url"].split("/")[-1]
         pr_number = item["number"]
         author = item["user"]["login"]
@@ -239,12 +391,31 @@ def main():
         status = item["state"]
         created_day = item["created_at"]
         closed_day = item["closed_at"]
-        reflesh = check_pr_update(item, search_api_cache)
-        requested = get_requested_reviewers(repo_name, pr_number, token, pulls_api_cache, reflesh)
-        completed = get_completed_reviewers(repo_name, pr_number, author, requested, token, pulls_api_cache, reflesh)
+
+        # Cash が古い場合は更新
+        refresh = check_pr_update(item, search_api_cache)
         search_api_cache[item["html_url"]] = item["updated_at"]  # Update timestamp
-        author_count[authors.index(author)] += 1
-        update_data(data, repo_name, pr_number, author, authors, requested, completed)
+        refresh_reviews_api_cache(owner, repo_name, pr_number, token, pulls_api_cache, refresh)
+        refresh_pulls_api_cache(owner, repo_name, pr_number, pulls_api_cache, token, refresh)
+
+        # PR の情報を取得
+        pull_request = get_pull_request(owner, repo_name, pr_number, author, pulls_api_cache)
+        pull_request.first_review = get_first_person_review(owner, repo_name, pr_number, author, pulls_api_cache)
+        pull_requests[author].append(pull_request)
+
+        # Author-reviewer matrix
+        requested = get_requested_reviewers(owner, repo_name, pr_number, token, pulls_api_cache, refresh)
+        completed = get_completed(owner, repo_name, pr_number, author, requested, pulls_api_cache)
+        update_matrix_data(data, repo_name, pr_number, author, authors, requested, completed)
+
+        # PR の詳細情報を取得
+        num_comments = pull_request.num_comments
+        lifetime_day = pull_request.elapsed_business_days().days
+        lifetime_hour = pull_request.elapsed_business_days().seconds // 3600
+        first_review_hour = pull_request.first_review_elapsed_business_days().seconds // 3600
+        first_review_min = (pull_request.first_review_elapsed_business_days().seconds % 3600) // 60
+
+
         pr_detail = {
             "author": author,
             "title": title,
@@ -254,17 +425,32 @@ def main():
             "closed_day": closed_day,
             "requested": requested,
             "completed": completed,
+            "num_comments": num_comments,
+            "lifetime_day": lifetime_day,
+            "lifetime_hour": lifetime_hour,
+            "first_review_hour": first_review_hour,
+            "first_review_min": first_review_min,
         }
         pr_details.append(pr_detail)
     json.dump(pulls_api_cache, open(pulls_api_cache_filename, "w"), indent=2)
     json.dump(search_api_cache, open(search_api_cache_filename, "w"), indent=2)
+
     print("Author-reviewer matrix (review-requested, review-completed): ")
+    author_count = [len(pull_requests[author]) for author in authors]
     requested_count = np.sum(data[0], axis=0)
     completed_count = np.sum(data[1], axis=0)
     for i in range(n):
         print(f"{authors[i]}: {author_count[i]}, {requested_count[i]}, {completed_count[i]}")
 
-    data = get_github_data(authors, author_count, requested_count, completed_count, from_date, to_date, pr_details)
+    data = get_github_data(
+        authors,
+        author_count,
+        requested_count,
+        completed_count,
+        from_date,
+        to_date,
+        pr_details,
+    )
     json.dump(data, open("github_data.json", "w"), indent=2, ensure_ascii=False)
 
 

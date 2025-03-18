@@ -102,7 +102,7 @@ function updateChart() {
             y: {
               stacked: true,
               beginAtZero: true,
-              max: maxPrNum + 2, 
+              max: maxPrNum + 2,
             },
           },
           plugins: {
@@ -187,23 +187,47 @@ function insertPRData(prs, tbody) {
     const created_day = new Date(pr.created_day);
     const str_created_day = formatDate(created_day);
 
-    let str_closed_day, daysDiff;
+    let str_closed_day;
     if (pr.closed_day === null) {
       str_closed_day = "-";
       const closed_day = new Date(); // PRがクローズされていない場合は、今日の日付を使用
-      daysDiff = dateDiffInDays(created_day, closed_day) + 1;
     } else {
       const closed_day = new Date(pr.closed_day);
       str_closed_day = formatDate(closed_day);
-      daysDiff = dateDiffInDays(created_day, closed_day) + 1;
+    }
+
+    let num_comments;
+    if (pr.num_comments === null) {
+      num_comments = 0;
+    }
+    else {
+      num_comments = pr.num_comments;
+    }
+
+    let lifetime
+    if (pr.lifetime_day === null) {
+      lifetime = "-";
+    }
+    else {
+      lifetime = pr.lifetime_day * 24 + pr.lifetime_hour + "h";
+    }
+
+    let first_review
+    if (pr.first_review_min === null) {
+      first_review = "-";
+    }
+    else {
+      first_review = pr.first_review_hour + "h" + pr.first_review_min + "m";
     }
 
     row.innerHTML = `
         <td>${str_created_day}</td>
         <td>${str_closed_day}</td>
-        <td>${daysDiff}</td>
+        <td>${lifetime}</td>
+        <td>${first_review}</td>
         <td>${pr.title}</td>
         <td>${pr.status}</td>
+        <td>${num_comments}</td>
         <td><a href="${pr.html_url}" target="_blank">Link</a></td>
       `;
 
@@ -216,30 +240,30 @@ function displayOnModal(person, authorPrs, requestedPrs) {
   // テンプレートのbodyを取得
   const template = document.getElementById("pr-table-template");
 
-    // Author PRsのテーブルを作成
-    const authorTableContent = template.content.cloneNode(true);
-    const tableAuth = authorTableContent.querySelector("table");
-    tableAuth.classList.add("pr-table-author");
-    const tbodyAuthor = authorTableContent.querySelector("tbody");
-    insertPRData(authorPrs, tbodyAuthor);
-  
-    // Requested PRsのテーブルを作成
-    const requestedTableContent = template.content.cloneNode(true);
-    tableReq = requestedTableContent.querySelector("table");
-    tableReq.classList.add("pr-table-requested");
-    const tbodyReqested = requestedTableContent.querySelector("tbody");
-    insertPRData(requestedPrs, tbodyReqested);
-  
-    // モーダルコンテンツにPR情報を追加
-    modalContent.innerHTML = "";
-    modalContent.appendChild(document.createElement("h2")).textContent = `${person}'s PRs`;
-    modalContent.appendChild(document.createElement("h3")).textContent = "Author";
-    modalContent.appendChild(authorTableContent);
-    modalContent.appendChild(document.createElement("h3")).textContent = "Requested";
-    modalContent.appendChild(requestedTableContent);
-  
-    // モーダルを表示
-    modal.style.display = "block";
+  // Author PRsのテーブルを作成
+  const authorTableContent = template.content.cloneNode(true);
+  const tableAuth = authorTableContent.querySelector("table");
+  tableAuth.classList.add("pr-table-author");
+  const tbodyAuthor = authorTableContent.querySelector("tbody");
+  insertPRData(authorPrs, tbodyAuthor);
+
+  // Requested PRsのテーブルを作成
+  const requestedTableContent = template.content.cloneNode(true);
+  tableReq = requestedTableContent.querySelector("table");
+  tableReq.classList.add("pr-table-requested");
+  const tbodyReqested = requestedTableContent.querySelector("tbody");
+  insertPRData(requestedPrs, tbodyReqested);
+
+  // モーダルコンテンツにPR情報を追加
+  modalContent.innerHTML = "";
+  modalContent.appendChild(document.createElement("h2")).textContent = `${person}'s PRs`;
+  modalContent.appendChild(document.createElement("h3")).textContent = "Author";
+  modalContent.appendChild(authorTableContent);
+  modalContent.appendChild(document.createElement("h3")).textContent = "Requested";
+  modalContent.appendChild(requestedTableContent);
+
+  // モーダルを表示
+  modal.style.display = "block";
 }
 
 // データ更新の結果を表示する関数
@@ -259,13 +283,13 @@ function setDefaultDates() {
   })
     .then((response) => response.json())
     .then((data) => {
-    const fromDate = data["period"][0];
-    const toDate = data["period"][1];
-    const toDateInput = document.getElementById("toDateInput");
-    const fromDateInput = document.getElementById("fromDateInput");
-    fromDateInput.value = fromDate;
-    toDateInput.value = toDate;
-  })
+      const fromDate = data["period"][0];
+      const toDate = data["period"][1];
+      const toDateInput = document.getElementById("toDateInput");
+      const fromDateInput = document.getElementById("fromDateInput");
+      fromDateInput.value = fromDate;
+      toDateInput.value = toDate;
+    })
 }
 
 // 日付をYYYY-MM-DD形式にフォーマットする関数

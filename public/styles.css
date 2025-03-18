@@ -25,7 +25,8 @@ h1 {
 }
 
 .input-container {
-  margin: 0 10px; /* 'from' と 'to' の両側に余白を追加 */
+  margin: 0 10px;
+  /* 'from' と 'to' の両側に余白を追加 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -44,7 +45,8 @@ h1 {
   margin: 4px 2px;
   cursor: pointer;
   border-radius: 5px;
-  margin-left: 15px; /* 左側の余白を追加 */
+  margin-left: 15px;
+  /* 左側の余白を追加 */
 }
 
 #runButton:hover {
@@ -54,7 +56,8 @@ h1 {
 }
 
 .template-inputs {
-  margin: 0 10px; /* 'from' と 'to' の両側に余白を追加 */
+  margin: 0 10px;
+  /* 'from' と 'to' の両側に余白を追加 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -73,7 +76,8 @@ h1 {
   margin: 4px 2px;
   cursor: pointer;
   border-radius: 10px;
-  margin-left: 15px; /* 左側の余白を追加 */
+  margin-left: 15px;
+  /* 左側の余白を追加 */
 }
 
 .template-inputs button:hover {
@@ -99,7 +103,8 @@ h1 {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.8); /* 半透明の背景 */
+  background: rgba(255, 255, 255, 0.8);
+  /* 半透明の背景 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -108,7 +113,8 @@ h1 {
 
 #result {
   text-align: center;
-  visibility: hidden; /* 初期状態で非表示 */
+  visibility: hidden;
+  /* 初期状態で非表示 */
   font-size: 1.5em;
   margin-bottom: 5px;
   color: indianred;
@@ -176,35 +182,54 @@ h1 {
 }
 
 /* 各列の幅を指定 */
+/* open */
 .pr-table th:nth-child(1),
 .pr-table td:nth-child(1) {
   width: 8%;
-} /* open */
+}
 
+/* close */
 .pr-table th:nth-child(2),
 .pr-table td:nth-child(2) {
   width: 8%;
-} /* close */
+}
 
+/* Lifetime */
 .pr-table th:nth-child(3),
 .pr-table td:nth-child(3) {
   width: 4%;
-} /* duration */
+}
 
+/* FirstReview */
 .pr-table th:nth-child(4),
 .pr-table td:nth-child(4) {
-  width: 30%;
-} /* Title */
+  width: 4%;
+}
 
+/* Tittle */
 .pr-table th:nth-child(5),
 .pr-table td:nth-child(5) {
-  width: 4%;
-} /* Status */
+  width: 30%;
+}
 
+/* Status */
 .pr-table th:nth-child(6),
 .pr-table td:nth-child(6) {
   width: 4%;
-} /* Link */
+}
+
+/* Comments */
+.pr-table th:nth-child(7),
+.pr-table td:nth-child(7) {
+  width: 4%;
+}
+
+/* Link */
+.pr-table th:nth-child(8),
+.pr-table td:nth-child(8) {
+  width: 4%;
+}
+
 
 .pr-table .closed {
   color: #999999;

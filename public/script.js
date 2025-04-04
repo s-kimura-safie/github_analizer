@@ -75,6 +75,20 @@ function updateChart() {
     .then((response) => response.json())
     .then((data) => {
       const ctx = document.getElementById("reviewChart").getContext("2d");
+      console.log("Fetched data:", data);
+
+      // data.datasets と labels からメンバーではない人物の label 要素を削除
+      const nonMEmberLabels = ["s-doi"]
+      // 対象者のラベルのインデックスを取得
+      const labelsToRemove = data.labels.filter((label) => nonMEmberLabels.includes(label));
+      const labelsToRemoveIndex = labelsToRemove.map((label) => data.labels.indexOf(label));
+      // 対象者のデータを削除
+      data.labels = data.labels.filter((_, index) => !labelsToRemoveIndex.includes(index));
+      data.datasets.forEach((dataset) => {
+        dataset.data = dataset.data.filter((_, index) => !labelsToRemoveIndex.includes(index));
+      });
+
+      // data.datasets の順番を変更
       data.datasets = [data.datasets[2], data.datasets[1], data.datasets[0]];
       data.datasets[0].backgroundColor = "#439D64";;
       data.datasets[1].backgroundColor = "#FF6565";

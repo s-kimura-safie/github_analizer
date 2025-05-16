@@ -410,16 +410,20 @@ def main():
 
         # PR の詳細情報を取得
         num_comments = pull_request.num_comments
+        is_merged = pull_request.is_merged
         lifetime_day = pull_request.elapsed_business_days().days
         lifetime_hour = pull_request.elapsed_business_days().seconds // 3600
         first_review_hour = int(pull_request.first_review_elapsed_business_days().total_seconds() // 3600)
         first_review_min = int((pull_request.first_review_elapsed_business_days().total_seconds() % 3600) // 60)
 
+        if (status == "closed" and not is_merged): # PR がクローズされているがマージされていない場合
+            continue
         pr_detail = {
             "author": author,
             "title": title,
             "html_url": html_url,
             "status": status,
+            "is_merged": is_merged,
             "created_day": created_day,
             "closed_day": closed_day,
             "requested": requested,

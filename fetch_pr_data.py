@@ -400,6 +400,9 @@ def main():
 
         # PR の情報を取得
         pull_request = get_pull_request(owner, repo_name, pr_number, author, pulls_api_cache)
+        if (status == "closed" and not pull_request.is_merged): # PR がクローズされているがマージされていない場合
+            continue
+
         pull_request.first_review = get_first_person_review(owner, repo_name, pr_number, author, pulls_api_cache)
         pull_requests[author].append(pull_request)
 
@@ -409,26 +412,23 @@ def main():
         update_matrix_data(data, repo_name, pr_number, author, authors, requested, completed)
 
         # PR の詳細情報を取得
-        num_comments = pull_request.num_comments
-        is_merged = pull_request.is_merged
         lifetime_day = pull_request.elapsed_business_days().days
         lifetime_hour = pull_request.elapsed_business_days().seconds // 3600
         first_review_hour = int(pull_request.first_review_elapsed_business_days().total_seconds() // 3600)
         first_review_min = int((pull_request.first_review_elapsed_business_days().total_seconds() % 3600) // 60)
 
-        if (status == "closed" and not is_merged): # PR がクローズされているがマージされていない場合
-            continue
+
         pr_detail = {
             "author": author,
             "title": title,
             "html_url": html_url,
             "status": status,
-            "is_merged": is_merged,
+            "is_merged": pull_request.is_merged,
             "created_day": created_day,
             "closed_day": closed_day,
             "requested": requested,
             "completed": completed,
-            "num_comments": num_comments,
+            "num_comments": pull_request.num_comments,
             "lifetime_day": lifetime_day,
             "lifetime_hour": lifetime_hour,
             "first_review_hour": first_review_hour,

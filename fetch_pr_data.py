@@ -8,7 +8,7 @@ from typing import Generator
 from zoneinfo import ZoneInfo
 
 import config as cfg
-import numpy as np  # 40 ms
+import numpy as np
 import requests
 from holiday_jp import HolidayJp
 from tqdm import tqdm
@@ -34,31 +34,23 @@ class PullRequest:
         return self.closed is not None
 
     def elapsed(self) -> timedelta:
-        if self.closed is None:
-            return datetime.now().astimezone(ZoneInfo("Asia/Tokyo")) - self.created
-        return self.closed - self.created
+        end = self.closed or datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
+        return end - self.created
+
+    def calc_business_days(self, end_dt: datetime) -> timedelta:
+        business_days = 0
+        for dt in self.daterange(self.created, end_dt):
+            if HolidayJp(dt.date()).is_business_day:
+                business_days += 1
+        return timedelta(days=business_days - 1) if business_days > 0 else timedelta(0)
 
     def elapsed_business_days(self) -> timedelta:
-        if self.closed is None:
-            end_dt = datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
-        else:
-            end_dt = self.closed
-
-        for dt in self.daterange(self.created, end_dt):
-            if not HolidayJp(dt.date()).is_business_day:
-                end_dt -= timedelta(days=1)
-        return end_dt - self.created
+        end_dt = self.closed or datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
+        return self.calc_business_days(end_dt)
 
     def first_review_elapsed_business_days(self) -> timedelta:
-        if self.first_review is None:
-            end_dt = datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
-        else:
-            end_dt = self.first_review
-
-        for dt in self.daterange(self.created, end_dt):
-            if not HolidayJp(dt.date()).is_business_day:
-                end_dt -= timedelta(days=1)
-        return end_dt - self.created
+        end_dt = self.first_review or datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
+        return self.calc_business_days(end_dt)
 
 
 def validate_date(date_string: str) -> None:
@@ -156,9 +148,7 @@ def get_requested_reviewers(
     else:
         response_json = pulls_api_cache[url]
 
-    reviewers = []
-    for reviewer in response_json["users"]:
-        reviewers.append(reviewer["login"])
+    reviewers = [reviewer["login"] for reviewer in response_json["users"]]
     return reviewers
 
 
@@ -170,7 +160,7 @@ def refresh_reviews_api_cache(
     pulls_api_cache: dict,
     refresh: bool,
 ) -> None:
-    # Use GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews
+    # Use GET /repos/{owner}/{repo}/pulls/{pr_number}/reviews
 
     url = f"https://api.github.com/repos/{owner}/{repository}/pulls/{pr_number}/reviews"
 
@@ -243,8 +233,7 @@ def refresh_cache(url: str, api_cache: dict, token: str) -> None:
     if response.status_code != 200:
         print(response)
         sys.exit(1)
-    response_json = response.json()
-    api_cache[url] = response_json
+    api_cache[url] = response.json()
 
 
 def refresh_pulls_api_cache(
@@ -333,6 +322,60 @@ def get_github_data(
     }
 
 
+def process_single_pr(item, authors, token, pulls_api_cache, search_api_cache, data, pull_requests):
+    owner = item["repository_url"].split("/")[-2]
+    repo_name = item["repository_url"].split("/")[-1]
+    pr_number = item["number"]
+    author = item["user"]["login"]
+    title = item["title"]
+    html_url = item["html_url"]
+    status = item["state"]
+    created_day = item["created_at"]
+    closed_day = item["closed_at"]
+
+    # Cash が古い場合は更新
+    refresh = check_pr_update(item, search_api_cache)
+    search_api_cache[item["html_url"]] = item["updated_at"]  # Update timestamp
+    refresh_reviews_api_cache(owner, repo_name, pr_number, token, pulls_api_cache, refresh)
+    refresh_pulls_api_cache(owner, repo_name, pr_number, pulls_api_cache, token, refresh)
+
+    # PR の情報を取得
+    pull_request = get_pull_request(owner, repo_name, pr_number, author, pulls_api_cache)
+    if status == "closed" and not pull_request.is_merged:  # PR がクローズされているがマージされていない場合
+        return None
+
+    pull_request.first_review = get_first_person_review(owner, repo_name, pr_number, author, pulls_api_cache)
+    pull_requests[author].append(pull_request)
+
+    # Author-reviewer matrix
+    requested = get_requested_reviewers(owner, repo_name, pr_number, token, pulls_api_cache, refresh)
+    completed = get_completed(owner, repo_name, pr_number, author, requested, pulls_api_cache)
+    update_matrix_data(data, repo_name, pr_number, author, authors, requested, completed)
+
+    # PR の詳細情報を取得
+    lifetime_day = pull_request.elapsed_business_days().days
+    lifetime_hour = pull_request.elapsed_business_days().seconds // 3600
+    first_review_hour = int(pull_request.first_review_elapsed_business_days().total_seconds() // 3600)
+    first_review_min = int((pull_request.first_review_elapsed_business_days().total_seconds() % 3600) // 60)
+
+    return {
+        "author": author,
+        "title": title,
+        "html_url": html_url,
+        "status": status,
+        "is_merged": pull_request.is_merged,
+        "created_day": created_day,
+        "closed_day": closed_day,
+        "requested": requested,
+        "completed": completed,
+        "num_comments": pull_request.num_comments,
+        "lifetime_day": lifetime_day,
+        "lifetime_hour": lifetime_hour,
+        "first_review_hour": first_review_hour,
+        "first_review_min": first_review_min,
+    }
+
+
 # Excute main
 def main():
     if len(sys.argv) > 1:
@@ -379,62 +422,10 @@ def main():
     items = pulls["items"]
     num_items = len(items)
     pr_details = []
-    for i in tqdm(range(num_items)):
-        # fetch した PR の情報を取得
-        item = items[i]
-        owner = item["repository_url"].split("/")[-2]
-        repo_name = item["repository_url"].split("/")[-1]
-        pr_number = item["number"]
-        author = item["user"]["login"]
-        title = item["title"]
-        html_url = item["html_url"]
-        status = item["state"]
-        created_day = item["created_at"]
-        closed_day = item["closed_at"]
-
-        # Cash が古い場合は更新
-        refresh = check_pr_update(item, search_api_cache)
-        search_api_cache[item["html_url"]] = item["updated_at"]  # Update timestamp
-        refresh_reviews_api_cache(owner, repo_name, pr_number, token, pulls_api_cache, refresh)
-        refresh_pulls_api_cache(owner, repo_name, pr_number, pulls_api_cache, token, refresh)
-
-        # PR の情報を取得
-        pull_request = get_pull_request(owner, repo_name, pr_number, author, pulls_api_cache)
-        if (status == "closed" and not pull_request.is_merged): # PR がクローズされているがマージされていない場合
-            continue
-
-        pull_request.first_review = get_first_person_review(owner, repo_name, pr_number, author, pulls_api_cache)
-        pull_requests[author].append(pull_request)
-
-        # Author-reviewer matrix
-        requested = get_requested_reviewers(owner, repo_name, pr_number, token, pulls_api_cache, refresh)
-        completed = get_completed(owner, repo_name, pr_number, author, requested, pulls_api_cache)
-        update_matrix_data(data, repo_name, pr_number, author, authors, requested, completed)
-
-        # PR の詳細情報を取得
-        lifetime_day = pull_request.elapsed_business_days().days
-        lifetime_hour = pull_request.elapsed_business_days().seconds // 3600
-        first_review_hour = int(pull_request.first_review_elapsed_business_days().total_seconds() // 3600)
-        first_review_min = int((pull_request.first_review_elapsed_business_days().total_seconds() % 3600) // 60)
-
-
-        pr_detail = {
-            "author": author,
-            "title": title,
-            "html_url": html_url,
-            "status": status,
-            "is_merged": pull_request.is_merged,
-            "created_day": created_day,
-            "closed_day": closed_day,
-            "requested": requested,
-            "completed": completed,
-            "num_comments": pull_request.num_comments,
-            "lifetime_day": lifetime_day,
-            "lifetime_hour": lifetime_hour,
-            "first_review_hour": first_review_hour,
-            "first_review_min": first_review_min,
-        }
-        pr_details.append(pr_detail)
+    for item in tqdm(items):
+        pr_detail = process_single_pr(item, authors, token, pulls_api_cache, search_api_cache, data, pull_requests)
+        if pr_detail:
+            pr_details.append(pr_detail)
     json.dump(pulls_api_cache, open(pulls_api_cache_filename, "w"), indent=2)
     json.dump(search_api_cache, open(search_api_cache_filename, "w"), indent=2)
 
@@ -445,7 +436,7 @@ def main():
     for i in range(n):
         print(f"{authors[i]}: {author_count[i]}, {requested_count[i]}, {completed_count[i]}")
 
-    data = get_github_data(
+    data_json = get_github_data(
         authors,
         author_count,
         requested_count,
@@ -454,7 +445,7 @@ def main():
         to_date,
         pr_details,
     )
-    json.dump(data, open("github_data.json", "w"), indent=2, ensure_ascii=False)
+    json.dump(data_json, open("github_data.json", "w"), indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":

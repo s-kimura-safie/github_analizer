@@ -232,7 +232,27 @@ h1 {
   width: 4%;
 }
 
-
 .pr-table .closed {
   color: #999999;
+}
+
+.pr-table .completed {
+  color: #999999;
+}
+
+.completed-toggle {
+  margin: 0;
+}
+
+.completed-toggle label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.completed-toggle input[type="checkbox"] {
+  margin-right: 5px;
 }

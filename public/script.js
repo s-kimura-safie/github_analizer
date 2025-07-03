@@ -78,9 +78,9 @@ function updateChart() {
       console.log("Fetched data:", data);
 
       // data.datasets と labels からメンバーではない人物の label 要素を削除
-      const nonMEmberLabels = ["s-doi"]
+      const nonMemberLabels = ["s-doi"]
       // 対象者のラベルのインデックスを取得
-      const labelsToRemove = data.labels.filter((label) => nonMEmberLabels.includes(label));
+      const labelsToRemove = data.labels.filter((label) => nonMemberLabels.includes(label));
       const labelsToRemoveIndex = labelsToRemove.map((label) => data.labels.indexOf(label));
       // 対象者のデータを削除
       data.labels = data.labels.filter((_, index) => !labelsToRemoveIndex.includes(index));
@@ -160,9 +160,9 @@ function showAuthorPRs(person) {
     .then((data) => {
       const prData = data["pr_details"];
       const authorPrs = prData.filter((item) => item.author.includes(person));
-      // const requestedPrs = prData.filter((item) => item.requested.includes(person));
       const requestedPrs = prData.filter((item) => item.requested.some((req) => req.includes(person)));
-      displayOnModal(person, authorPrs, requestedPrs);
+      const completedPrs = prData.filter((item) => item.completed.some((req) => req.includes(person)));
+      displayOnModal(person, authorPrs, requestedPrs, completedPrs);
     })
     .catch((error) => {
       console.error("Error fetching PR info:", error);
@@ -190,12 +190,15 @@ window.onclick = function (event) {
 };
 
 // PRデータを表に挿入する関数
-function insertPRData(prs, tbody) {
+function insertPRData(prs, tbody, isCompleted = false) {
   prs.forEach((pr) => {
     const row = document.createElement("tr");
     const isClosedPR = pr.status.toLowerCase().includes("close");
     if (isClosedPR) {
       row.classList.add("closed");
+    }
+    if (isCompleted) {
+      row.classList.add("completed");
     }
 
     const created_day = new Date(pr.created_day);
@@ -250,9 +253,10 @@ function insertPRData(prs, tbody) {
 }
 
 // モーダルにPR情報を表示する関数
-function displayOnModal(person, authorPrs, requestedPrs) {
+function displayOnModal(person, authorPrs, requestedPrs, completedPrs) {
   // テンプレートのbodyを取得
   const template = document.getElementById("pr-table-template");
+  const toggleTemplate = document.getElementById("completed-toggle-template");
 
   // Author PRsのテーブルを作成
   const authorTableContent = template.content.cloneNode(true);
@@ -268,12 +272,50 @@ function displayOnModal(person, authorPrs, requestedPrs) {
   const tbodyReqested = requestedTableContent.querySelector("tbody");
   insertPRData(requestedPrs, tbodyReqested);
 
+  // レビュー済みPR表示用のトグルを作成
+  const toggleContent = toggleTemplate.content.cloneNode(true);
+  const toggleCheckbox = toggleContent.querySelector("#showCompletedToggle");
+
+  // トグルのイベントリスナーを設定
+  toggleCheckbox.addEventListener("change", function () {
+    const completedRows = tableReq.querySelectorAll(".completed");
+    completedRows.forEach(row => {
+      row.style.display = this.checked ? "" : "none";
+    });
+  });
+
+  // 初期状態でレビュー済みPRを表に追加（非表示状態）
+  insertPRData(completedPrs, tbodyReqested, true);
+
+  // 初期状態でレビュー済みPRを非表示にする
+  const completedRows = tableReq.querySelectorAll(".completed");
+  completedRows.forEach(row => {
+    row.style.display = "none";
+  });
+
   // モーダルコンテンツにPR情報を追加
   modalContent.innerHTML = "";
   modalContent.appendChild(document.createElement("h2")).textContent = `${person}'s PRs`;
-  modalContent.appendChild(document.createElement("h3")).textContent = "Author";
+  const authorTitle = document.createElement("h3");
+  authorTitle.style.marginTop = "40px";
+  authorTitle.textContent = "Author";
+  modalContent.appendChild(authorTitle);
   modalContent.appendChild(authorTableContent);
-  modalContent.appendChild(document.createElement("h3")).textContent = "Requested";
+
+  // Requestedの見出しとトグルを横並びで配置
+  const requestedHeader = document.createElement("div");
+  requestedHeader.style.display = "flex";
+  requestedHeader.style.alignItems = "center";
+  const requestedTitle = document.createElement("h3");
+  requestedTitle.textContent = "Requested";
+  requestedTitle.style.marginRight = "20px";
+  requestedHeader.style.marginBottom = "-20px";
+  requestedHeader.style.marginTop = "20px";
+  requestedHeader.appendChild(requestedTitle);
+  requestedHeader.appendChild(toggleContent);
+
+  // Requestedのテーブルを追加
+  modalContent.appendChild(requestedHeader);
   modalContent.appendChild(requestedTableContent);
 
   // モーダルを表示
@@ -281,7 +323,7 @@ function displayOnModal(person, authorPrs, requestedPrs) {
 }
 
 // データ更新の結果を表示する関数
-function showResult() {
+function showResult() { // TODO:関数名のResultがあいまい
   const resultDiv = document.getElementById("result");
   resultDiv.textContent = "Successfully data updated";
   resultDiv.style.visibility = "visible"; // 表示

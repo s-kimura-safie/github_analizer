@@ -91,79 +91,98 @@ async function fetchGithubData(fromDate, toDate) {
   }
 }
 
+// データ処理：メンバーフィルタリング
+function filterNonMembers(data) {
+  const nonMemberLabels = ["s-doi"];
+  const labelsToRemove = data.labels.filter((label) => nonMemberLabels.includes(label));
+  const labelsToRemoveIndex = labelsToRemove.map((label) => data.labels.indexOf(label));
+
+  // ラベルとデータセットから対象者を削除
+  data.labels = data.labels.filter((_, index) => !labelsToRemoveIndex.includes(index));
+  data.datasets.forEach((dataset) => {
+    dataset.data = dataset.data.filter((_, index) => !labelsToRemoveIndex.includes(index));
+  });
+
+  return data;
+}
+
+// データ処理：データセットの順番と色の設定
+function configureDatasets(data) {
+  data.datasets = [data.datasets[2], data.datasets[1], data.datasets[0]];
+  data.datasets[0].backgroundColor = "#439D64";
+  data.datasets[1].backgroundColor = "#FF6565";
+  data.datasets[2].backgroundColor = "#40A2C0";
+  return data;
+}
+
+// チャート設定の作成
+function createChartOptions(data) {
+  const fromDate = data["period"][0];
+  const toDate = data["period"][1];
+  const maxPrNum = calcMaxPrNum(data);
+
+  return {
+    responsive: true,
+    scales: {
+      x: { stacked: true },
+      y: {
+        stacked: true,
+        beginAtZero: true,
+        max: maxPrNum + 2,
+      },
+    },
+    plugins: {
+      title: {
+        display: true,
+        text: `Review Activity in AI Vision from ${fromDate} to ${toDate}`,
+        font: { size: 20 }
+      },
+      tooltip: {
+        mode: "index",
+        intersect: false,
+      },
+    },
+    onClick: (event, elements) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const person = data.labels[index];
+        console.log("Clicked on:", person);
+        showAuthorPRs(person);
+      }
+    },
+  };
+}
+
+// チャートの作成
+function createChart(ctx, data, options) {
+  // 既存のチャートがあれば破棄
+  if (window.reviewChart instanceof Chart) {
+    window.reviewChart.destroy();
+  }
+
+  window.reviewChart = new Chart(ctx, {
+    type: "bar",
+    data: data,
+    options: options,
+  });
+}
+
+// メイン関数：updateChart()
 async function updateChart() {
   try {
     const data = await GitHubApi.getReviewData();
     const ctx = document.getElementById("reviewChart").getContext("2d");
     console.log("Fetched data:", data);
 
-    // data.datasets と labels からメンバーではない人物の label 要素を削除
-    const nonMemberLabels = ["s-doi"]
-    // 対象者のラベルのインデックスを取得
-    const labelsToRemove = data.labels.filter((label) => nonMemberLabels.includes(label));
-    const labelsToRemoveIndex = labelsToRemove.map((label) => data.labels.indexOf(label));
-    // 対象者のデータを削除
-    data.labels = data.labels.filter((_, index) => !labelsToRemoveIndex.includes(index));
-    data.datasets.forEach((dataset) => {
-      dataset.data = dataset.data.filter((_, index) => !labelsToRemoveIndex.includes(index));
-    });
+    // データ処理
+    const filteredData = filterNonMembers(data);
+    const configuredData = configureDatasets(filteredData);
 
-    // data.datasets の順番を変更
-    data.datasets = [data.datasets[2], data.datasets[1], data.datasets[0]];
-    data.datasets[0].backgroundColor = "#439D64";;
-    data.datasets[1].backgroundColor = "#FF6565";
-    data.datasets[2].backgroundColor = "#40A2C0";
-    const fromDate = data["period"][0];
-    const toDate = data["period"][1];
+    // チャート設定の作成
+    const chartOptions = createChartOptions(configuredData);
 
-    // 既存のチャートがあれば破棄する
-    if (window.reviewChart instanceof Chart) {
-      window.reviewChart.destroy();
-    }
-
-    // データセットの最大値を計算
-    let maxPrNum = calcMaxPrNum(data);
-
-    window.reviewChart = new Chart(ctx, {
-      type: "bar",
-      data: data,
-      options: {
-        responsive: true,
-        scales: {
-          x: {
-            stacked: true,
-          },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            max: maxPrNum + 2,
-          },
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: "Review Activity in AI Vision from " + fromDate + " to " + toDate,
-            font: {
-              size: 20,
-            }
-          },
-          tooltip: {
-            mode: "index",
-            intersect: false,
-          },
-        },
-        onClick: (event, elements) => {
-          if (elements.length > 0) {
-            const index = elements[0].index;
-            const person = data.labels[index];
-            console.log("Clicked on:", person);
-
-            // クリックされた人のPR情報を取得
-            showAuthorPRs(person);
-          }
-        },
-      },
-    });
+    // チャートの作成
+    createChart(ctx, configuredData, chartOptions);
   } catch (error) {
     console.error("Error:", error);
     document.getElementById("result").textContent = "Failed to fetch or display data";
@@ -267,27 +286,35 @@ function insertPRData(prs, tbody, isCompleted = false) {
   });
 }
 
-// モーダルにPR情報を表示する関数
-function displayOnModal(person, authorPrs, requestedPrs, completedPrs) {
-  // テンプレートのbodyを取得
+// テーブル作成：Author PRsのテーブル
+function createAuthorTable(authorPrs) {
   const template = document.getElementById("pr-table-template");
-  const toggleTemplate = document.getElementById("completed-toggle-template");
-
-  // Author PRsのテーブルを作成
   const authorTableContent = template.content.cloneNode(true);
   const tableAuth = authorTableContent.querySelector("table");
   tableAuth.classList.add("pr-table-author");
   const tbodyAuthor = authorTableContent.querySelector("tbody");
   insertPRData(authorPrs, tbodyAuthor);
+  return authorTableContent;
+}
 
-  // Requested PRsのテーブルを作成
+// テーブル作成：Requested PRsのテーブル
+function createRequestedTable(requestedPrs, completedPrs) {
+  const template = document.getElementById("pr-table-template");
   const requestedTableContent = template.content.cloneNode(true);
-  tableReq = requestedTableContent.querySelector("table");
+  const tableReq = requestedTableContent.querySelector("table");
   tableReq.classList.add("pr-table-requested");
-  const tbodyReqested = requestedTableContent.querySelector("tbody");
-  insertPRData(requestedPrs, tbodyReqested);
+  const tbodyRequested = requestedTableContent.querySelector("tbody");
 
-  // レビュー済みPR表示用のトグルを作成
+  // リクエストされたPRとレビュー済みPRを追加
+  insertPRData(requestedPrs, tbodyRequested);
+  insertPRData(completedPrs, tbodyRequested, true);
+
+  return { tableContent: requestedTableContent, table: tableReq };
+}
+
+// トグル作成とイベント設定
+function createCompletedToggle(tableReq) {
+  const toggleTemplate = document.getElementById("completed-toggle-template");
   const toggleContent = toggleTemplate.content.cloneNode(true);
   const toggleCheckbox = toggleContent.querySelector("#showCompletedToggle");
 
@@ -299,41 +326,79 @@ function displayOnModal(person, authorPrs, requestedPrs, completedPrs) {
     });
   });
 
-  // 初期状態でレビュー済みPRを表に追加（非表示状態）
-  insertPRData(completedPrs, tbodyReqested, true);
+  return toggleContent;
+}
 
-  // 初期状態でレビュー済みPRを非表示にする
+// ヘッダーの作成（見出しとトグルの横並び配置）
+function createSectionHeader(title, toggleContent) {
+  const header = document.createElement("div");
+  header.style.display = "flex";
+  header.style.alignItems = "center";
+
+  const titleElement = document.createElement("h3");
+  titleElement.textContent = title;
+  titleElement.style.marginRight = "20px";
+
+  header.style.marginBottom = "-20px";
+  header.style.marginTop = "20px";
+  header.appendChild(titleElement);
+
+  if (toggleContent) {
+    header.appendChild(toggleContent);
+  }
+
+  return header;
+}
+
+// レビュー済みPRを初期状態で非表示にする
+function hideCompletedPRs(tableReq) {
   const completedRows = tableReq.querySelectorAll(".completed");
   completedRows.forEach(row => {
     row.style.display = "none";
   });
+}
 
-  // モーダルコンテンツにPR情報を追加
+// モーダルコンテンツの構築
+function buildModalContent(person, authorTableContent, requestedTableContent, toggleContent) {
+  const modalContent = document.getElementById("prModalContent");
+
+  // モーダルコンテンツをクリア
   modalContent.innerHTML = "";
-  modalContent.appendChild(document.createElement("h2")).textContent = `${person}'s PRs`;
-  const authorTitle = document.createElement("h3");
-  authorTitle.style.marginTop = "40px";
-  authorTitle.textContent = "Author";
-  modalContent.appendChild(authorTitle);
+
+  // タイトルの追加
+  const title = document.createElement("h2");
+  title.textContent = `${person}'s PRs`;
+  modalContent.appendChild(title);
+
+  // Authorセクション
+  const authorHeader = createSectionHeader("Author");
+  authorHeader.style.marginTop = "40px";
+  modalContent.appendChild(authorHeader);
   modalContent.appendChild(authorTableContent);
 
-  // Requestedの見出しとトグルを横並びで配置
-  const requestedHeader = document.createElement("div");
-  requestedHeader.style.display = "flex";
-  requestedHeader.style.alignItems = "center";
-  const requestedTitle = document.createElement("h3");
-  requestedTitle.textContent = "Requested";
-  requestedTitle.style.marginRight = "20px";
-  requestedHeader.style.marginBottom = "-20px";
-  requestedHeader.style.marginTop = "20px";
-  requestedHeader.appendChild(requestedTitle);
-  requestedHeader.appendChild(toggleContent);
-
-  // Requestedのテーブルを追加
+  // Requestedセクション
+  const requestedHeader = createSectionHeader("Requested", toggleContent);
   modalContent.appendChild(requestedHeader);
   modalContent.appendChild(requestedTableContent);
+}
+
+// メイン関数：displayOnModal()
+function displayOnModal(person, authorPrs, requestedPrs, completedPrs) {
+  // テーブルの作成
+  const authorTableContent = createAuthorTable(authorPrs);
+  const { tableContent: requestedTableContent, table: tableReq } = createRequestedTable(requestedPrs, completedPrs);
+
+  // トグルの作成
+  const toggleContent = createCompletedToggle(tableReq);
+
+  // レビュー済みPRを初期状態で非表示
+  hideCompletedPRs(tableReq);
+
+  // モーダルコンテンツの構築
+  buildModalContent(person, authorTableContent, requestedTableContent, toggleContent);
 
   // モーダルを表示
+  const modal = document.getElementById("prModal");
   modal.style.display = "block";
 }
 

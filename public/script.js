@@ -1,3 +1,37 @@
+// GitHub API専用の関数
+const GitHubApi = {
+  async fetchData(fromDate, toDate) {
+    const response = await fetch('/run-python', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ fromDate, toDate })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  },
+
+  async getReviewData() {
+    const response = await fetch('/api/review-data', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+};
+
 // ページ読み込み時にも初期データを表示
 document.addEventListener("DOMContentLoaded", () => {
   setDefaultDates();
@@ -33,7 +67,7 @@ document.getElementById("monthly-btn").addEventListener("click", () => {
   fetchGithubData(fromDate, toDate);
 });
 
-function fetchGithubData(fromDate, toDate) {
+async function fetchGithubData(fromDate, toDate) {
   const resultDiv = document.getElementById("result");
   const loading = document.getElementById('loading');
 
@@ -41,132 +75,113 @@ function fetchGithubData(fromDate, toDate) {
   resultDiv.style.visibility = "visible";
   loading.style.display = 'block';
 
-  fetch("/run-python", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ fromDate, toDate }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      try {
-        showResult();
-        updateChart();
-      } catch (error) {
-        console.error("Error:", error);
-      }
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-    })
-    .finally(() => {
-      loading.style.display = 'none';
-    });
+  try {
+    const data = await GitHubApi.fetchData(fromDate, toDate);
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    showResult();
+    updateChart();
+  } catch (error) {
+    console.error("Error:", error);
+  } finally {
+    loading.style.display = 'none';
+  }
 }
 
-function updateChart() {
-  fetch("/api/review-data", {
-    method: "GET",
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      const ctx = document.getElementById("reviewChart").getContext("2d");
-      console.log("Fetched data:", data);
+async function updateChart() {
+  try {
+    const data = await GitHubApi.getReviewData();
+    const ctx = document.getElementById("reviewChart").getContext("2d");
+    console.log("Fetched data:", data);
 
-      // data.datasets と labels からメンバーではない人物の label 要素を削除
-      const nonMemberLabels = ["s-doi"]
-      // 対象者のラベルのインデックスを取得
-      const labelsToRemove = data.labels.filter((label) => nonMemberLabels.includes(label));
-      const labelsToRemoveIndex = labelsToRemove.map((label) => data.labels.indexOf(label));
-      // 対象者のデータを削除
-      data.labels = data.labels.filter((_, index) => !labelsToRemoveIndex.includes(index));
-      data.datasets.forEach((dataset) => {
-        dataset.data = dataset.data.filter((_, index) => !labelsToRemoveIndex.includes(index));
-      });
+    // data.datasets と labels からメンバーではない人物の label 要素を削除
+    const nonMemberLabels = ["s-doi"]
+    // 対象者のラベルのインデックスを取得
+    const labelsToRemove = data.labels.filter((label) => nonMemberLabels.includes(label));
+    const labelsToRemoveIndex = labelsToRemove.map((label) => data.labels.indexOf(label));
+    // 対象者のデータを削除
+    data.labels = data.labels.filter((_, index) => !labelsToRemoveIndex.includes(index));
+    data.datasets.forEach((dataset) => {
+      dataset.data = dataset.data.filter((_, index) => !labelsToRemoveIndex.includes(index));
+    });
 
-      // data.datasets の順番を変更
-      data.datasets = [data.datasets[2], data.datasets[1], data.datasets[0]];
-      data.datasets[0].backgroundColor = "#439D64";;
-      data.datasets[1].backgroundColor = "#FF6565";
-      data.datasets[2].backgroundColor = "#40A2C0";
-      const fromDate = data["period"][0];
-      const toDate = data["period"][1];
+    // data.datasets の順番を変更
+    data.datasets = [data.datasets[2], data.datasets[1], data.datasets[0]];
+    data.datasets[0].backgroundColor = "#439D64";;
+    data.datasets[1].backgroundColor = "#FF6565";
+    data.datasets[2].backgroundColor = "#40A2C0";
+    const fromDate = data["period"][0];
+    const toDate = data["period"][1];
 
-      // 既存のチャートがあれば破棄する
-      if (window.reviewChart instanceof Chart) {
-        window.reviewChart.destroy();
-      }
+    // 既存のチャートがあれば破棄する
+    if (window.reviewChart instanceof Chart) {
+      window.reviewChart.destroy();
+    }
 
-      // データセットの最大値を計算
-      let maxPrNum = calcMaxPrNum(data);
+    // データセットの最大値を計算
+    let maxPrNum = calcMaxPrNum(data);
 
-      window.reviewChart = new Chart(ctx, {
-        type: "bar",
-        data: data,
-        options: {
-          responsive: true,
-          scales: {
-            x: {
-              stacked: true,
-            },
-            y: {
-              stacked: true,
-              beginAtZero: true,
-              max: maxPrNum + 2,
-            },
+    window.reviewChart = new Chart(ctx, {
+      type: "bar",
+      data: data,
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            stacked: true,
           },
-          plugins: {
-            title: {
-              display: true,
-              text: "Review Activity in AI Vision from " + fromDate + " to " + toDate,
-              font: {
-                size: 20,
-              }
-            },
-            tooltip: {
-              mode: "index",
-              intersect: false,
-            },
-          },
-          onClick: (event, elements) => {
-            if (elements.length > 0) {
-              const index = elements[0].index;
-              const person = data.labels[index];
-              console.log("Clicked on:", person);
-
-              // クリックされた人のPR情報を取得
-              showAuthorPRs(person);
-            }
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            max: maxPrNum + 2,
           },
         },
-      });
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-      document.getElementById("result").textContent = "Failed to fetch or display data";
+        plugins: {
+          title: {
+            display: true,
+            text: "Review Activity in AI Vision from " + fromDate + " to " + toDate,
+            font: {
+              size: 20,
+            }
+          },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+          },
+        },
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const person = data.labels[index];
+            console.log("Clicked on:", person);
+
+            // クリックされた人のPR情報を取得
+            showAuthorPRs(person);
+          }
+        },
+      },
     });
+  } catch (error) {
+    console.error("Error:", error);
+    document.getElementById("result").textContent = "Failed to fetch or display data";
+  }
 }
 
 // クリックした人物がAuthorのPR情報を表示する関数
-function showAuthorPRs(person) {
-  fetch("/api/review-data", {
-    method: "GET",
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      const prData = data["pr_details"];
-      const authorPrs = prData.filter((item) => item.author.includes(person));
-      const requestedPrs = prData.filter((item) => item.requested.some((req) => req.includes(person)));
-      const completedPrs = prData.filter((item) => item.completed.some((req) => req.includes(person)));
-      displayOnModal(person, authorPrs, requestedPrs, completedPrs);
-    })
-    .catch((error) => {
-      console.error("Error fetching PR info:", error);
-    });
+async function showAuthorPRs(person) {
+  try {
+    const data = await GitHubApi.getReviewData();
+    const prData = data["pr_details"];
+    const authorPrs = prData.filter((item) => item.author.includes(person));
+    const requestedPrs = prData.filter((item) => item.requested.some((req) => req.includes(person)));
+    const completedPrs = prData.filter((item) => item.completed.some((req) => req.includes(person)));
+    displayOnModal(person, authorPrs, requestedPrs, completedPrs);
+  } catch (error) {
+    console.error("Error fetching PR info:", error);
+  }
 }
 
 // モーダル関連の要素を取得
@@ -333,19 +348,18 @@ function showResult() { // TODO:関数名のResultがあいまい
 }
 
 // デフォルトの日付を設定する関数
-function setDefaultDates() {
-  fetch("/api/review-data", {
-    method: "GET",
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      const fromDate = data["period"][0];
-      const toDate = data["period"][1];
-      const toDateInput = document.getElementById("toDateInput");
-      const fromDateInput = document.getElementById("fromDateInput");
-      fromDateInput.value = fromDate;
-      toDateInput.value = toDate;
-    })
+async function setDefaultDates() {
+  try {
+    const data = await GitHubApi.getReviewData();
+    const fromDate = data["period"][0];
+    const toDate = data["period"][1];
+    const toDateInput = document.getElementById("toDateInput");
+    const fromDateInput = document.getElementById("fromDateInput");
+    fromDateInput.value = fromDate;
+    toDateInput.value = toDate;
+  } catch (error) {
+    console.error("Error setting default dates:", error);
+  }
 }
 
 // 日付をYYYY-MM-DD形式にフォーマットする関数

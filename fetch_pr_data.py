@@ -37,20 +37,22 @@ class PullRequest:
         end = self.closed or datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
         return end - self.created
 
-    def calc_business_days(self, end_dt: datetime) -> timedelta:
-        business_days = 0
+    def calc_non_business_days(self, end_dt: datetime) -> int:
+        """
+        self.created から end_dt までの非営業日数を返す
+        """
+        non_business_days = 0
         for dt in self.daterange(self.created, end_dt):
-            if HolidayJp(dt.date()).is_business_day:
-                business_days += 1
-        return timedelta(days=business_days - 1) if business_days > 0 else timedelta(0)
+            if not HolidayJp(dt.date()).is_business_day:
+                non_business_days += 1
+        return non_business_days
 
-    def elapsed_business_days(self) -> timedelta:
-        end_dt = self.closed or datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
-        return self.calc_business_days(end_dt)
-
-    def first_review_elapsed_business_days(self) -> timedelta:
-        end_dt = self.first_review or datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
-        return self.calc_business_days(end_dt)
+    def elapsed_business_time(self, end_dt: datetime) -> timedelta:
+        total_time = end_dt - self.created
+        non_business_days = self.calc_non_business_days(end_dt)
+        non_business_time = timedelta(hours=non_business_days * 24)
+        business_time = total_time - non_business_time
+        return business_time
 
 
 def validate_date(date_string: str) -> None:
@@ -353,10 +355,19 @@ def process_single_pr(item, authors, token, pulls_api_cache, search_api_cache, d
     update_matrix_data(data, repo_name, pr_number, author, authors, requested, completed)
 
     # PR の詳細情報を取得
-    lifetime_day = pull_request.elapsed_business_days().days
-    lifetime_hour = pull_request.elapsed_business_days().seconds // 3600
-    first_review_hour = int(pull_request.first_review_elapsed_business_days().total_seconds() // 3600)
-    first_review_min = int((pull_request.first_review_elapsed_business_days().total_seconds() % 3600) // 60)
+    closed_time = pull_request.closed or datetime.now().astimezone(ZoneInfo("Asia/Tokyo"))
+    lifetime = pull_request.elapsed_business_time(closed_time)
+    lifetime_day = lifetime.days
+    lifetime_hour = lifetime.seconds // 3600
+
+    first_review_dt = pull_request.first_review or None
+    if first_review_dt:
+        first_review_time = pull_request.elapsed_business_time(first_review_dt)
+        first_review_hour = first_review_time.seconds // 3600
+        first_review_min = (first_review_time.seconds % 3600) // 60
+    else:
+        first_review_hour = None
+        first_review_min = None
 
     return {
         "author": author,

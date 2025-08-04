@@ -1,0 +1,260 @@
+{
+  "period": [
+    "2025-07-28",
+    "2025-08-04"
+  ],
+  "labels": [
+    "woniki",
+    "n-kashiwagi",
+    "t-hashimoto",
+    "yuki-kimura",
+    "s-kimura",
+    "s-doi",
+    "yu-konno",
+    "k-mizuno",
+    "akihiro-ito",
+    "chao-zhang",
+    "yoshiyasu-tanaka",
+    "t-kawakami-safie"
+  ],
+  "datasets": [
+    {
+      "label": "Author",
+      "data": [
+        0,
+        0,
+        0,
+        2,
+        3,
+        2,
+        0,
+        2,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "label": "Review Requested",
+      "data": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "Review Completed",
+      "data": [
+        1,
+        2,
+        0,
+        1,
+        2,
+        0,
+        1,
+        1,
+        1,
+        3,
+        2
+      ]
+    }
+  ],
+  "pr_details": [
+    {
+      "author": "s-kimura-safie",
+      "title": "CMakeビルドに移行",
+      "html_url": "https://github.com/SafieDev/EdgeSegmentation/pull/88",
+      "status": "open",
+      "is_merged": false,
+      "created_day": "2025-08-01T09:15:39Z",
+      "closed_day": null,
+      "requested": [
+        "akihiro-ito-safie",
+        "k-mizuno-safie"
+      ],
+      "completed": [],
+      "num_comments": 0,
+      "lifetime_day": 0,
+      "lifetime_hour": 22,
+      "first_review_hour": null,
+      "first_review_min": null
+    },
+    {
+      "author": "k-mizuno-safie",
+      "title": "RAW画像生成ツールに yolov5_night モードを追加",
+      "html_url": "https://github.com/SafieDev/EdgePeopleDetection/pull/129",
+      "status": "closed",
+      "is_merged": true,
+      "created_day": "2025-08-01T06:20:57Z",
+      "closed_day": "2025-08-04T02:27:27Z",
+      "requested": [],
+      "completed": [
+        "s-kimura-safie",
+        "n-kashiwagi-safie"
+      ],
+      "num_comments": 2,
+      "lifetime_day": 0,
+      "lifetime_hour": 20,
+      "first_review_hour": 2,
+      "first_review_min": 20
+    },
+    {
+      "author": "s-kimura-safie",
+      "title": "standaloneのディレクトリ構造を修正",
+      "html_url": "https://github.com/SafieDev/EdgeSegmentation/pull/87",
+      "status": "closed",
+      "is_merged": true,
+      "created_day": "2025-07-31T06:23:34Z",
+      "closed_day": "2025-08-01T06:28:23Z",
+      "requested": [],
+      "completed": [
+        "yuki-kimura-safie",
+        "yoshiyasu-tanaka-safie"
+      ],
+      "num_comments": 5,
+      "lifetime_day": 1,
+      "lifetime_hour": 0,
+      "first_review_hour": 21,
+      "first_review_min": 56
+    },
+    {
+      "author": "yuki-kimura-safie",
+      "title": "タイマー起動の呼び出し関数の間違いの修正",
+      "html_url": "https://github.com/SafieDev/EdgeFaceCapture/pull/114",
+      "status": "closed",
+      "is_merged": true,
+      "created_day": "2025-07-31T03:01:59Z",
+      "closed_day": "2025-07-31T05:32:18Z",
+      "requested": [],
+      "completed": [
+        "chao-zhang-safie",
+        "s-kimura-safie"
+      ],
+      "num_comments": 0,
+      "lifetime_day": 0,
+      "lifetime_hour": 2,
+      "first_review_hour": 0,
+      "first_review_min": 49
+    },
+    {
+      "author": "k-mizuno-safie",
+      "title": "snpe_miniのDockerビルド時に発生するLegacyKeyValueFormat warningの抑制",
+      "html_url": "https://github.com/SafieDev/ai_dev/pull/496",
+      "status": "closed",
+      "is_merged": true,
+      "created_day": "2025-07-31T01:59:04Z",
+      "closed_day": "2025-08-01T05:13:54Z",
+      "requested": [],
+      "completed": [
+        "chao-zhang-safie",
+        "yu-konno-safie"
+      ],
+      "num_comments": 0,
+      "lifetime_day": 1,
+      "lifetime_hour": 3,
+      "first_review_hour": 2,
+      "first_review_min": 45
+    },
+    {
+      "author": "s-kimura-safie",
+      "title": "standaloneのメンテナンス",
+      "html_url": "https://github.com/SafieDev/EdgeSegmentation/pull/86",
+      "status": "closed",
+      "is_merged": true,
+      "created_day": "2025-07-30T12:17:51Z",
+      "closed_day": "2025-08-01T05:40:13Z",
+      "requested": [],
+      "completed": [
+        "k-mizuno-safie",
+        "n-kashiwagi-safie"
+      ],
+      "num_comments": 10,
+      "lifetime_day": 1,
+      "lifetime_hour": 17,
+      "first_review_hour": 14,
+      "first_review_min": 27
+    },
+    {
+      "author": "s-doi-safie",
+      "title": "ジョブ作成周りを改善",
+      "html_url": "https://github.com/SafieDev/ai_demo_server/pull/210",
+      "status": "open",
+      "is_merged": false,
+      "created_day": "2025-07-30T06:50:35Z",
+      "closed_day": null,
+      "requested": [
+        "u-shibutani"
+      ],
+      "completed": [
+        "copilot-pull-request-reviewer[bot]"
+      ],
+      "num_comments": 5,
+      "lifetime_day": 3,
+      "lifetime_hour": 0,
+      "first_review_hour": null,
+      "first_review_min": null
+    },
+    {
+      "author": "s-doi-safie",
+      "title": "ai_demo_serverの変更を適応",
+      "html_url": "https://github.com/SafieDev/ai_studio_server/pull/10",
+      "status": "closed",
+      "is_merged": true,
+      "created_day": "2025-07-30T01:27:07Z",
+      "closed_day": "2025-07-30T01:28:28Z",
+      "requested": [],
+      "completed": [],
+      "num_comments": 0,
+      "lifetime_day": 0,
+      "lifetime_hour": 0,
+      "first_review_hour": null,
+      "first_review_min": null
+    },
+    {
+      "author": "chao-zhang-safie",
+      "title": "人数カウントの画像入力関連修正＆README更新",
+      "html_url": "https://github.com/SafieDev/EdgePeopleDetection/pull/128",
+      "status": "closed",
+      "is_merged": true,
+      "created_day": "2025-07-29T09:30:34Z",
+      "closed_day": "2025-07-31T14:48:21Z",
+      "requested": [],
+      "completed": [
+        "akihiro-ito-safie",
+        "yoshiyasu-tanaka-safie"
+      ],
+      "num_comments": 3,
+      "lifetime_day": 2,
+      "lifetime_hour": 5,
+      "first_review_hour": 16,
+      "first_review_min": 14
+    },
+    {
+      "author": "yuki-kimura-safie",
+      "title": "HailoのDetectorのMobileNetV3のリファクタリング",
+      "html_url": "https://github.com/SafieDev/EdgeFaceCapture/pull/113",
+      "status": "closed",
+      "is_merged": true,
+      "created_day": "2025-07-28T10:33:20Z",
+      "closed_day": "2025-07-30T08:30:46Z",
+      "requested": [],
+      "completed": [
+        "chao-zhang-safie",
+        "woniki-sf"
+      ],
+      "num_comments": 1,
+      "lifetime_day": 1,
+      "lifetime_hour": 21,
+      "first_review_hour": 19,
+      "first_review_min": 0
+    }
+  ]
+}
